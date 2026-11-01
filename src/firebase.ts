@@ -52,7 +52,7 @@ export const ADMIN_EMAIL = decodeSecureStr(_EM_B64);
 
 export const GOOGLE_DRIVE_WEBAPP_URL =
   import.meta.env.VITE_DRIVE_UPLOAD_URL ||
-  'https://script.google.com/macros/s/AKfycbwD2sFfTxFThD7iNBx5CgDlK2HBkJBa9sNNN5yCoUXoEnz2ZWikuBYlzrTuCmlHvwv2HA/exec';
+  'https://script.google.com/macros/s/AKfycbzbGg_ahh8Qi7r0sDV1loMvfptp-4rbGvi0mzhJqam1DXNA-QWXFM3F6dhmUw92aY9PPA/exec';
 
 export function extractDriveFileId(url?: string): string | null {
   if (!url) return null;
