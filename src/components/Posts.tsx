@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Post } from '../firebase';
+import { extractDriveFileId, getDirectDriveImageUrl } from '../firebase';
 import { Tag } from 'lucide-react';
 
 interface PostsProps {
@@ -83,15 +84,37 @@ export const Posts: React.FC<PostsProps> = ({ posts }) => {
                 <>
                   {post.text && <p style={{ fontSize: '0.92rem', lineHeight: 1.8 }}>{post.text}</p>}
                   {post.type === 'image' && isHttps && post.url && (
-                    <img src={post.url} alt={post.title || ''} loading="lazy" />
+                    <img
+                      src={getDirectDriveImageUrl(post.url)}
+                      alt={post.title || ''}
+                      loading="lazy"
+                    />
                   )}
                   {post.type === 'video' && isHttps && post.url && (
-                    <video
-                      src={post.url}
-                      controls
-                      preload="metadata"
-                      playsInline
-                    />
+                    (() => {
+                      const driveId = extractDriveFileId(post.url);
+                      if (driveId) {
+                        return (
+                          <div style={{ marginTop: '12px', width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', aspectRatio: '16/9', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--line)' }}>
+                            <iframe
+                              src={`https://drive.google.com/file/d/${driveId}/preview`}
+                              style={{ width: '100%', height: '100%', border: 'none' }}
+                              allow="autoplay; encrypted-media"
+                              allowFullScreen
+                              title={post.title || 'Video'}
+                            />
+                          </div>
+                        );
+                      }
+                      return (
+                        <video
+                          src={post.url}
+                          controls
+                          preload="metadata"
+                          playsInline
+                        />
+                      );
+                    })()
                   )}
                 </>
               )}

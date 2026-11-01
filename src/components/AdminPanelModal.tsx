@@ -134,9 +134,9 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       return;
     }
 
-    if (selectedFile && selectedFile.size > 60 * 1024 * 1024) {
+    if (selectedFile && selectedFile.size > 35 * 1024 * 1024) {
       setIsSuccessMsg(false);
-      setStatusMsg('قەبارەی فایلەکە نابێت لە 60 مێگابایت زیاتر بێت');
+      setStatusMsg('قەبارەی فایل بۆ گووگڵ درایڤ نابێت لە 35 مێگابایت زیاتر بێت');
       return;
     }
 
@@ -162,11 +162,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       setFilePreviewUrl(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       setIsSuccessMsg(true);
-      setStatusMsg('پۆستەکە بە سەرکەوتوویی لە بەشی دیاریکراو بڵاوکرایەوە ✨');
-    } catch (err) {
-      console.error(err);
+      setStatusMsg('پۆستەکە و فایلەکە بە سەرکەوتوویی لە گووگڵ درایڤ خەزنکرا و بڵاوکرایەوە ✨');
+    } catch (err: unknown) {
+      console.error('Publish error:', err);
       setIsSuccessMsg(false);
-      setStatusMsg('هەڵەیەک ڕوویدا لە کاتی بڵاوکردنەوە، دووبارە هەوڵبدەوە');
+      setStatusMsg(err instanceof Error ? err.message : 'هەڵەیەک ڕوویدا لە کاتی بڵاوکردنەوە، دووبارە هەوڵبدەوە');
     } finally {
       setIsPublishing(false);
       setUploadPercent(null);

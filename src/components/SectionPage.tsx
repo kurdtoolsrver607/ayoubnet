@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { Post } from '../firebase';
+import { extractDriveFileId, getDirectDriveImageUrl } from '../firebase';
 import type { NavSection } from './Navbar';
 import {
   Search,
@@ -290,7 +291,7 @@ export const SectionPage: React.FC<SectionPageProps> = ({
                   {post.type === 'image' && isHttps && post.url && (
                     <div style={{ marginTop: '8px' }}>
                       <img
-                        src={post.url}
+                        src={getDirectDriveImageUrl(post.url)}
                         alt={post.title || ''}
                         loading="lazy"
                         style={{
@@ -304,20 +305,38 @@ export const SectionPage: React.FC<SectionPageProps> = ({
                   )}
 
                   {post.type === 'video' && isHttps && post.url && (
-                    <div style={{ marginTop: '8px' }}>
-                      <video
-                        src={post.url}
-                        controls
-                        preload="metadata"
-                        playsInline
-                        style={{
-                          maxWidth: '100%',
-                          borderRadius: '12px',
-                          display: 'block',
-                          border: '1px solid var(--line)',
-                        }}
-                      />
-                    </div>
+                    (() => {
+                      const driveId = extractDriveFileId(post.url);
+                      if (driveId) {
+                        return (
+                          <div style={{ marginTop: '10px', width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', aspectRatio: '16/9', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--line)' }}>
+                            <iframe
+                              src={`https://drive.google.com/file/d/${driveId}/preview`}
+                              style={{ width: '100%', height: '100%', border: 'none' }}
+                              allow="autoplay; encrypted-media"
+                              allowFullScreen
+                              title={post.title || 'Video'}
+                            />
+                          </div>
+                        );
+                      }
+                      return (
+                        <div style={{ marginTop: '8px' }}>
+                          <video
+                            src={post.url}
+                            controls
+                            preload="metadata"
+                            playsInline
+                            style={{
+                              maxWidth: '100%',
+                              borderRadius: '12px',
+                              display: 'block',
+                              border: '1px solid var(--line)',
+                            }}
+                          />
+                        </div>
+                      );
+                    })()
                   )}
                 </>
               )}

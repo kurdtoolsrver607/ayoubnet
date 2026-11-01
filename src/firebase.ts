@@ -25,15 +25,6 @@ import {
   type Firestore,
   type Timestamp,
 } from 'firebase/firestore';
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
-  type FirebaseStorage,
-} from 'firebase/storage';
-
 import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics';
 
 export const firebaseConfig = {
@@ -59,10 +50,116 @@ const decodeSecureStr = (encoded: string): string => {
 
 export const ADMIN_EMAIL = decodeSecureStr(_EM_B64);
 
+export const GOOGLE_DRIVE_WEBAPP_URL =
+  import.meta.env.VITE_DRIVE_UPLOAD_URL ||
+  'https://script.google.com/macros/s/AKfycbwD2sFfTxFThD7iNBx5CgDlK2HBkJBa9sNNN5yCoUXoEnz2ZWikuBYlzrTuCmlHvwv2HA/exec';
+
+export function extractDriveFileId(url?: string): string | null {
+  if (!url) return null;
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+                url.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+                url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+export function getDirectDriveImageUrl(url: string): string {
+  const fileId = extractDriveFileId(url);
+  if (fileId) {
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  }
+  return url;
+}
+
+export async function uploadToGoogleDrive(
+  file: File,
+  onProgress?: (pct: number) => void
+): Promise<{ url: string; fileId?: string }> {
+  if (onProgress) onProgress(20);
+
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const res = reader.result as string;
+      const cleanBase64 = res.includes(',') ? res.split(',')[1] : res;
+      resolve(cleanBase64);
+    };
+    reader.onerror = () => reject(new Error('نەتوانرا فایلەکە بخوێندرێتەوە'));
+    reader.readAsDataURL(file);
+  });
+
+  if (onProgress) onProgress(50);
+
+  const safeName = file.name.replace(/[^\w.-]/g, '_');
+  const payload = {
+    file: base64,
+    base64: base64,
+    name: safeName,
+    filename: safeName,
+    type: file.type || 'application/octet-stream',
+    mimeType: file.type || 'application/octet-stream',
+  };
+
+  if (onProgress) onProgress(75);
+
+  try {
+    const res = await fetch(GOOGLE_DRIVE_WEBAPP_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (onProgress) onProgress(90);
+
+    const text = await res.text();
+    let data: Record<string, unknown> = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (text.startsWith('http')) {
+        data = { url: text.trim() };
+      }
+    }
+
+    if (data.error) {
+      throw new Error(String(data.error));
+    }
+
+    const fileId = (data.fileId || data.id || data.file_id || '') as string;
+    let url = (data.url || data.fileUrl || data.downloadUrl || data.viewUrl || '') as string;
+
+    if (!url && fileId) {
+      url = `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
+
+    if (!url && text.includes('drive.google.com')) {
+      const match = text.match(/https:\/\/[^\s"']+/);
+      if (match) url = match[0];
+    }
+
+    if (!url) {
+      if (text.includes('You need permission') || text.includes('accounts.google.com')) {
+        throw new Error('ڕێگەپێدانی گووگڵ درایڤ پێنەدراوە. تکایە لە پڕۆژەی Google Apps Script بەشی (Who has access) بکە بە (Anyone).');
+      }
+      throw new Error('نەتوانرا لینکی درایڤ لە سێرڤەرەکە وەربگیرێت.');
+    }
+
+    if (onProgress) onProgress(100);
+    return { url, fileId: fileId || undefined };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('CORS')) {
+      throw new Error('نەتوانرا پەیوەندی بە گووگڵ درایڤ بکرێت. تکایە دڵنیابە لە Google Apps Script کە بەشی (Who has access) کراوە بە (Anyone).');
+    }
+    throw new Error(msg);
+  }
+}
+
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
-let storage: FirebaseStorage | null = null;
+const storage = null;
 let analytics: Analytics | null = null;
 let initError: string | null = null;
 
@@ -70,7 +167,6 @@ try {
   app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
-  storage = getStorage(app);
 
   if (typeof window !== 'undefined' && app) {
     isSupported().then((supported) => {
@@ -275,27 +371,9 @@ export async function createPost(
   let filePath: string | undefined;
 
   if (file && (type === 'image' || type === 'video')) {
-    if (!storage) throw new Error('Storage not initialized');
-    const safeName = file.name.replace(/[^\w.-]/g, '_');
-    filePath = `posts/${Date.now()}_${safeName}`;
-    const storageRef = ref(storage, filePath);
-    const uploadTask = uploadBytesResumable(storageRef, file, { contentType: file.type });
-
-    await new Promise<void>((resolve, reject) => {
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          if (snapshot.totalBytes > 0 && onProgress) {
-            const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-            onProgress(pct);
-          }
-        },
-        (error) => reject(error),
-        () => resolve()
-      );
-    });
-
-    downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+    const uploadRes = await uploadToGoogleDrive(file, onProgress);
+    downloadUrl = uploadRes.url;
+    filePath = uploadRes.fileId;
   }
 
   const docData: Record<string, unknown> = {
@@ -316,13 +394,6 @@ export async function createPost(
 export async function deletePost(post: Post): Promise<void> {
   if (!db) throw new Error('Database not initialized');
   await deleteDoc(doc(db, 'posts', post.id));
-  if (post.path && storage) {
-    try {
-      await deleteObject(ref(storage, post.path));
-    } catch (err) {
-      console.debug('Storage delete skipped/error:', err);
-    }
-  }
 }
 
 // Auth helpers
