@@ -64,11 +64,28 @@ let storage: FirebaseStorage | null = null;
 let initError: string | null = null;
 
 try {
-  const parsedConfig = JSON.parse(decodeSecureStr(_K.slice().reverse().join('')));
-  app = getApps().length > 0 ? getApps()[0] : initializeApp(parsedConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+  let parsedConfig: Record<string, string> | null = null;
+  if (import.meta.env.VITE_FIREBASE_API_KEY) {
+    parsedConfig = {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+      databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || '',
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+      appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+      measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+    };
+  } else {
+    parsedConfig = JSON.parse(decodeSecureStr(_K.slice().reverse().join('')));
+  }
+
+  if (parsedConfig) {
+    app = getApps().length > 0 ? getApps()[0] : initializeApp(parsedConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  }
 } catch (err: unknown) {
   initError = err instanceof Error ? err.message : String(err);
   console.warn('Firebase initialization note:', initError);
