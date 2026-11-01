@@ -6,10 +6,11 @@ interface FooterProps {
     total: VisitorStats;
     today: DayStats;
   };
+  siteName: string;
   onOpenAdmin: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ stats, onOpenAdmin }) => {
+export const Footer: React.FC<FooterProps> = ({ stats, siteName, onOpenAdmin }) => {
   const clickCountRef = useRef(0);
   const lastClickTimeRef = useRef(0);
   const numFormatter = new Intl.NumberFormat('en-US');
@@ -52,9 +53,9 @@ export const Footer: React.FC<FooterProps> = ({ stats, onOpenAdmin }) => {
         id="yr"
         onClick={handleYearClick}
         style={{ marginTop: '6px', padding: '28px 10px', cursor: 'pointer' }}
-        title="© 2026 Ayoub Social"
+        title={`© 2026 ${siteName}`}
       >
-        © 2026 Ayoub Social
+        © 2026 {siteName}
       </p>
     </footer>
   );

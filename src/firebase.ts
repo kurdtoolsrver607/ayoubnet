@@ -89,10 +89,59 @@ export interface DayStats {
 export interface Post {
   id: string;
   type: 'text' | 'image' | 'video' | 'code';
+  title?: string;
+  category?: 'general' | 'programming' | 'posts' | 'electronics';
   text?: string;
   url?: string;
   path?: string;
   t?: Timestamp | { toDate?: () => Date } | null;
+}
+
+export interface SiteSettings {
+  name: string;
+  subtitle: string;
+}
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  name: 'Ayoubi',
+  subtitle: 'پلاتفۆرمی فەرمی ئەیوبی بۆ بازرگانی، دروستکردنی وێبسایت و ئەپ، دیزاینی وێنە و ڤیدیۆ، و سیستمە دەستکردەکان.',
+};
+
+export function subscribeSiteSettings(onUpdate: (settings: SiteSettings) => void): () => void {
+  const localSaved = localStorage.getItem('ayoubi_site_settings');
+  if (localSaved) {
+    try {
+      onUpdate(JSON.parse(localSaved));
+    } catch {}
+  } else {
+    onUpdate(DEFAULT_SITE_SETTINGS);
+  }
+
+  if (!db) return () => {};
+
+  return onSnapshot(
+    doc(db, 'settings', 'site'),
+    (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as SiteSettings;
+        localStorage.setItem('ayoubi_site_settings', JSON.stringify(data));
+        onUpdate(data);
+      }
+    },
+    () => {}
+  );
+}
+
+export async function updateSiteSettings(settings: SiteSettings): Promise<void> {
+  localStorage.setItem('ayoubi_site_settings', JSON.stringify(settings));
+  if (!db) return;
+  try {
+    const b = writeBatch(db);
+    b.set(doc(db, 'settings', 'site'), settings, { merge: true });
+    await b.commit();
+  } catch (err) {
+    console.debug('Save settings to firebase error:', err);
+  }
 }
 
 // Track visitor safely
@@ -201,10 +250,12 @@ export async function sendAdminPasswordReset(email: string): Promise<void> {
   await sendPasswordResetEmail(auth, email);
 }
 
-// Create new post with optional file
+// Create new post with optional file, title, and category
 export async function createPost(
   type: 'text' | 'image' | 'video' | 'code',
   text: string,
+  title: string = '',
+  category: 'general' | 'programming' | 'posts' | 'electronics' = 'general',
   file?: File | null,
   onProgress?: (pct: number) => void
 ): Promise<void> {
@@ -239,6 +290,8 @@ export async function createPost(
 
   const docData: Record<string, unknown> = {
     type,
+    title: title.trim(),
+    category: category || 'general',
     text: text.trim(),
     t: serverTimestamp(),
   };

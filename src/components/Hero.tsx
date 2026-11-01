@@ -1,14 +1,19 @@
 import React from 'react';
 
-export const Hero: React.FC = () => {
+interface HeroProps {
+  siteName: string;
+  subtitle: string;
+}
+
+export const Hero: React.FC<HeroProps> = ({ siteName, subtitle }) => {
   return (
     <header className="hero">
       <div>
         <h1>
-          بیرۆکەکانت دەکەم بە سیستمێکی کارا لەگەڵ <b>Ayoub Social</b>
+          بیرۆکەکانت دەکەم بە سیستمێکی کارا لەگەڵ <b>{siteName}</b>
         </h1>
         <p className="lead">
-          بازرگانی، دروستکردنی وێبسایت و ئەپ، دیزاینی وێنە و ڤیدیۆ، و سیستمە دەستکردەکان؛ هەموو لە یەک شوێن.
+          {subtitle || 'بازرگانی، دروستکردنی وێبسایت و ئەپ، دیزاینی وێنە و ڤیدیۆ، و سیستمە دەستکردەکان؛ هەموو لە یەک شوێن.'}
         </p>
         <div className="btns">
           <a className="btn pri" href="#services">
@@ -29,17 +34,17 @@ export const Hero: React.FC = () => {
           <span />
           <span />
           <span />
-          <em>ayoub.js</em>
+          <em>ayoubi.js</em>
         </div>
         <pre>
           <span className="l" style={{ animationDelay: '0.2s' }}>
-            <span className="k">const</span> <span className="p">ayoub</span> = {'{'}
+            <span className="k">const</span> <span className="p">{siteName.toLowerCase()}</span> = {'{'}
           </span>
           <span className="l" style={{ animationDelay: '0.55s' }}>
-            {'  '}brand: <span className="s">"Ayoub Social"</span>,
+            {'  '}brand: <span className="s">"{siteName}"</span>,
           </span>
           <span className="l" style={{ animationDelay: '0.9s' }}>
-            {'  '}business: <span className="n">true</span>,
+            {'  '}domain: <span className="s">"ayoubi.site"</span>,
           </span>
           <span className="l" style={{ animationDelay: '1.25s' }}>
             {'  '}build: [<span className="s">"websites"</span>, <span className="s">"apps"</span>],
