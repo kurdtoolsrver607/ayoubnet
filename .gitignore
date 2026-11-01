@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Chat attachments and screenshots
+assets/aistudio/
+public/assets/aistudio/
+*.jpg
+*.jpeg
+*.png
+
+# Editor / OS files
+.DS_Store
+Thumbs.db

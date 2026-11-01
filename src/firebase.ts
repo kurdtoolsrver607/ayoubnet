@@ -34,17 +34,19 @@ import {
   type FirebaseStorage,
 } from 'firebase/storage';
 
-// Securely obfuscated configuration & admin identity to protect from scraping in open-source
-const _K = [
-  "ZmZmZjAiLCJtZWFzdXJlbWVudElkIjoiRy0wNlo3NDcyRkQ3In0=",
-  "ImFwcElkIjoiMTozNjczODM5NTcyMDE6d2ViOjNkODdjZTg3ZmZlODE0ZGNm",
-  "cmFnZS5hcHAiLCJtZXNzYWdpbmdTZW5kZXJJZCI6IjM2NzM4Mzk1NzIwMSIs",
-  "YzdhIiwic3RvcmFnZUJ1Y2tldCI6Im15YXBwLTU5YzdhLmZpcmViYXNlc3Rv",
-  "bHQtcnRkYi5maXJlYmFzZWlvLmNvbSIsInByb2plY3RJZCI6Im15YXBwLTU5",
-  "Y29tIiwiZGF0YWJhc2VVUkwiOiJodHRwczovL215YXBwLTU5YzdhLWRlZmF1",
-  "Q1NJdk0iLCJhdXRoRG9tYWluIjoibXlhcHAtNTljN2EuZmlyZWJhc2VhcHAu",
-  "eyJhcGlLZXkiOiJBSXphU3lBZkw2ejF3eVJBbUkwNy1jRGIxMWNMZjFzLTZo"
-];
+import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics';
+
+export const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAfL6z1wyRAmI07-cDb11cLf1s-6hCSIvM",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "myapp-59c7a.firebaseapp.com",
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://myapp-59c7a-default-rtdb.firebaseio.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "myapp-59c7a",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "myapp-59c7a.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "367383957201",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:367383957201:web:3d87ce87ffe814dcfffff0",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-06Z7472FD7"
+};
+
 const _EM_B64 = "YWJkdWxsYS5yZW5nYXIzQGdtYWlsLmNvbQ==";
 
 const decodeSecureStr = (encoded: string): string => {
@@ -61,37 +63,28 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
+let analytics: Analytics | null = null;
 let initError: string | null = null;
 
 try {
-  let parsedConfig: Record<string, string> | null = null;
-  if (import.meta.env.VITE_FIREBASE_API_KEY) {
-    parsedConfig = {
-      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-      databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || '',
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-      appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
-      measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
-    };
-  } else {
-    parsedConfig = JSON.parse(decodeSecureStr(_K.slice().reverse().join('')));
-  }
+  app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
 
-  if (parsedConfig) {
-    app = getApps().length > 0 ? getApps()[0] : initializeApp(parsedConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
+  if (typeof window !== 'undefined' && app) {
+    isSupported().then((supported) => {
+      if (supported && app) {
+        analytics = getAnalytics(app);
+      }
+    }).catch(() => {});
   }
 } catch (err: unknown) {
   initError = err instanceof Error ? err.message : String(err);
   console.warn('Firebase initialization note:', initError);
 }
 
-export { app, auth, db, storage, initError };
+export { app, auth, db, storage, analytics, initError };
 
 export interface VisitorStats {
   unique: number;
