@@ -34,12 +34,13 @@ import {
 } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAfL6z1wyRAmI07-cDb11cLf1s-6hCSItk0",
+  apiKey: "AIzaSyAfL6z1wyRAmI07-cDb11cLf1s-6hCSIvM",
   authDomain: "myapp-59c7a.firebaseapp.com",
+  databaseURL: "https://myapp-59c7a-default-rtdb.firebaseio.com",
   projectId: "myapp-59c7a",
   storageBucket: "myapp-59c7a.firebasestorage.app",
   messagingSenderId: "367383957201",
-  appId: "1:367383957201:web:3d87ce87fe814dcffffff0",
+  appId: "1:367383957201:web:3d87ce87ffe814dcfffff0",
   measurementId: "G-06Z7472FD7"
 };
 
