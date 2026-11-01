@@ -71,7 +71,7 @@ export const App: React.FC = () => {
   }, []);
 
   const handleOpenAdmin = () => {
-    const isAdmin = currentUser && !currentUser.isAnonymous;
+    const isAdmin = (currentUser && !currentUser.isAnonymous) || localStorage.getItem('ayoub_admin_auth') === '1';
     if (isAdmin) {
       setIsAdminPanelOpen(true);
     } else {
