@@ -3,6 +3,7 @@ import type { Post } from '../firebase';
 import { extractDriveFileId, formatPostDate } from '../firebase';
 import { DriveImage } from './DriveImage';
 import { ProgrammingTools } from './ProgrammingTools';
+import { PostCard } from './PostCard';
 import type { NavSection } from './Navbar';
 import {
   Search,
@@ -362,91 +363,9 @@ export const SectionPage: React.FC<SectionPageProps> = ({
       {/* Posts List (Shown when not in runner/encrypt subtabs, or in non-programming sections) */}
       {(section !== 'programming' || progSubTab === 'posts') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          {filteredPosts.map((post) => {
-            const dateStr = formatPostDate(post.t);
-            const isHttps = /^(https:|data:image\/)/.test(post.url || '');
-
-            return (
-              <article
-                key={post.id}
-                className="glass rv in"
-                style={{
-                  padding: '24px',
-                  borderRadius: '16px',
-                  border: '1px solid var(--line)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                }}
-              >
-                {/* Post Header: Title & Date */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
-                    {post.title || (post.type === 'code' ? 'نموونە کۆد' : 'بابەت')}
-                  </h3>
-
-                  {dateStr && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--muted)' }}>
-                      <Calendar size={13} />
-                      <span>{dateStr}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Post Content */}
-                {post.type === 'code' ? (
-                  <CodeBlock code={post.text || ''} />
-                ) : (
-                  <>
-                    {post.text && (
-                      <p style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--text)', fontSize: '0.94rem', lineHeight: 1.8 }}>
-                        {post.text}
-                      </p>
-                    )}
-
-                    {post.type === 'image' && isHttps && post.url && (
-                      <DriveImage url={post.url} backupUrl={post.backupUrl} alt={post.title || ''} />
-                    )}
-
-                    {post.type === 'video' && isHttps && post.url && (
-                      (() => {
-                        const driveId = extractDriveFileId(post.url);
-                        if (driveId) {
-                          return (
-                            <div style={{ marginTop: '10px', width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', aspectRatio: '16/9', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--line)' }}>
-                              <iframe
-                                src={`https://drive.google.com/file/d/${driveId}/preview`}
-                                style={{ width: '100%', height: '100%', border: 'none' }}
-                                allow="autoplay; encrypted-media"
-                                allowFullScreen
-                                title={post.title || 'Video'}
-                              />
-                            </div>
-                          );
-                        }
-                        return (
-                          <div style={{ marginTop: '8px' }}>
-                            <video
-                              src={post.url}
-                              controls
-                              preload="metadata"
-                              playsInline
-                              style={{
-                                maxWidth: '100%',
-                                borderRadius: '12px',
-                                display: 'block',
-                                border: '1px solid var(--line)',
-                              }}
-                            />
-                          </div>
-                        );
-                      })()
-                    )}
-                  </>
-                )}
-              </article>
-            );
-          })}
+          {filteredPosts.map((post) => (
+            <PostCard key={post.id} post={post} lang={lang} />
+          ))}
 
           {filteredPosts.length === 0 && (
             <div

@@ -18,6 +18,7 @@ import {
   collection,
   addDoc,
   deleteDoc,
+  updateDoc,
   query,
   orderBy,
   limit,
@@ -255,6 +256,8 @@ export interface Post {
   url?: string;
   backupUrl?: string;
   path?: string;
+  likes?: number;
+  views?: number;
   t?: Timestamp | { toDate?: () => Date } | null;
 }
 
@@ -350,6 +353,120 @@ export function formatPostDate(t: unknown): string {
     }
   } catch {
     return '';
+  }
+}
+
+export interface PostDateTimeInfo {
+  date: string;
+  time: string;
+  full: string;
+}
+
+export function formatPostDateTime(
+  t: unknown,
+  lang: 'ku' | 'ar' | 'en' = 'ku'
+): PostDateTimeInfo {
+  if (!t) return { date: '', time: '', full: '' };
+  try {
+    let date: Date | null = null;
+    if (typeof t === 'object' && t !== null) {
+      if ('toDate' in t && typeof (t as { toDate?: () => Date }).toDate === 'function') {
+        date = (t as { toDate: () => Date }).toDate();
+      } else if ('seconds' in t && typeof (t as { seconds?: number }).seconds === 'number') {
+        date = new Date((t as { seconds: number }).seconds * 1000);
+      }
+    } else if (typeof t === 'number') {
+      date = new Date(t);
+    } else if (typeof t === 'string') {
+      date = new Date(t);
+    }
+
+    if (!date || isNaN(date.getTime())) return { date: '', time: '', full: '' };
+
+    const locale = lang === 'en' ? 'en-US' : lang === 'ar' ? 'ar-IQ' : 'ckb-IQ';
+
+    let dateStr = '';
+    let timeStr = '';
+
+    try {
+      dateStr = date.toLocaleDateString(locale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      dateStr = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+    }
+
+    try {
+      timeStr = date.toLocaleTimeString(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch {
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      timeStr = `${hours}:${minutes}`;
+    }
+
+    return {
+      date: dateStr,
+      time: timeStr,
+      full: `${dateStr} • ${timeStr}`,
+    };
+  } catch {
+    return { date: '', time: '', full: '' };
+  }
+}
+
+export async function togglePostLike(postId: string): Promise<{ isLiked: boolean; delta: number }> {
+  if (!db || !postId) return { isLiked: false, delta: 0 };
+  const key = `liked_${postId}`;
+  const alreadyLiked = safeStorage.get(key) === '1';
+  const isLiked = !alreadyLiked;
+  const delta = isLiked ? 1 : -1;
+
+  if (isLiked) {
+    safeStorage.set(key, '1');
+  } else {
+    safeStorage.remove(key);
+  }
+
+  try {
+    if (auth && !auth.currentUser) {
+      if (auth.authStateReady) await auth.authStateReady();
+      if (!auth.currentUser) await signInAnonymously(auth);
+    }
+    const postRef = doc(db, 'posts', postId);
+    await updateDoc(postRef, {
+      likes: increment(delta),
+    });
+  } catch (err) {
+    console.debug('togglePostLike note:', err);
+  }
+
+  return { isLiked, delta };
+}
+
+export async function recordPostView(postId: string): Promise<void> {
+  if (!db || !postId) return;
+  const key = `viewed_${postId}`;
+  if (safeStorage.get(key) === '1') return;
+
+  safeStorage.set(key, '1');
+
+  try {
+    if (auth && !auth.currentUser) {
+      if (auth.authStateReady) await auth.authStateReady();
+      if (!auth.currentUser) await signInAnonymously(auth);
+    }
+    const postRef = doc(db, 'posts', postId);
+    await updateDoc(postRef, {
+      views: increment(1),
+    });
+  } catch (err) {
+    console.debug('recordPostView note:', err);
   }
 }
 
@@ -570,6 +687,8 @@ export async function createPost(
     title: title.trim(),
     category: category || 'general',
     text: text.trim(),
+    likes: 0,
+    views: 0,
     t: serverTimestamp(),
   };
 

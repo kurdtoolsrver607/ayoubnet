@@ -10,6 +10,7 @@ import {
   uploadToGoogleDrive,
   safeStorage,
   formatPostDate,
+  formatPostDateTime,
   type VisitorStats,
   type DayStats,
   type Post,
@@ -41,6 +42,8 @@ import {
   Settings,
   PlusCircle,
   LayoutGrid,
+  Heart,
+  Share2,
 } from 'lucide-react';
 import { DriveImage } from './DriveImage';
 
@@ -110,6 +113,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [postsFilter, setPostsFilter] = useState<'all' | 'general' | 'programming' | 'posts' | 'electronics'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteNotice, setDeleteNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
@@ -1203,7 +1207,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             {filteredPosts.map((post) => {
               const isConfirming = confirmDeleteId === post.id;
               const isDeleting = deletingId === post.id;
-              const dateStr = formatPostDate(post.t);
+              const dt = formatPostDateTime(post.t, 'ku');
+              const isLinkCopied = copiedPostId === post.id;
+
+              const handleCopyPostLink = () => {
+                const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+                const url = `${origin}${pathname}?post=${post.id}`;
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(url);
+                  setCopiedPostId(post.id);
+                  setTimeout(() => setCopiedPostId(null), 2500);
+                }
+              };
 
               return (
                 <div
@@ -1220,7 +1236,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   }}
                 >
                   <div style={{ flex: 1, minWidth: '220px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                       <span
                         style={{
                           fontSize: '0.72rem',
@@ -1228,6 +1244,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                           borderRadius: '6px',
                           background: 'rgba(94, 200, 255, 0.15)',
                           color: 'var(--ice)',
+                          fontWeight: 600,
                         }}
                       >
                         {post.category || 'گشتی'}
@@ -1243,7 +1260,55 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       >
                         {post.type}
                       </span>
-                      {dateStr && <span style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>{dateStr}</span>}
+
+                      {/* Date & Time Badges */}
+                      {dt.date && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--muted)' }}>
+                          <Calendar size={12} style={{ color: 'var(--ice)' }} />
+                          <span>{dt.date}</span>
+                        </span>
+                      )}
+                      {dt.time && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--muted)' }}>
+                          <Clock size={12} style={{ color: 'var(--vio)' }} />
+                          <span>{dt.time}</span>
+                        </span>
+                      )}
+
+                      {/* Likes count */}
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.75rem',
+                          padding: '2px 7px',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 75, 110, 0.12)',
+                          color: '#ff4b6e',
+                          fontWeight: 600,
+                        }}
+                      >
+                        <Heart size={12} fill="#ff4b6e" />
+                        <span style={{ direction: 'ltr' }}>{post.likes || 0}</span>
+                      </span>
+
+                      {/* Views count */}
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.75rem',
+                          padding: '2px 7px',
+                          borderRadius: '6px',
+                          background: 'rgba(94, 200, 255, 0.1)',
+                          color: 'var(--ice)',
+                        }}
+                      >
+                        <Eye size={12} />
+                        <span style={{ direction: 'ltr' }}>{post.views || 0} بینین</span>
+                      </span>
                     </div>
 
                     <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--text)' }}>
@@ -1282,7 +1347,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                   </div>
 
                   {/* Actions Column */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {/* Share / Direct Link Button */}
+                    <button
+                      type="button"
+                      onClick={handleCopyPostLink}
+                      className="btn"
+                      title="کۆپیکردنی لینکی ڕاستەوخۆی پۆست"
+                      style={{
+                        padding: '7px 12px',
+                        fontSize: '0.8rem',
+                        gap: '6px',
+                        color: isLinkCopied ? 'var(--s)' : 'var(--ice)',
+                        borderColor: isLinkCopied ? 'var(--s)' : 'var(--line2)',
+                      }}
+                    >
+                      {isLinkCopied ? <CheckCircle size={14} /> : <Share2 size={14} />}
+                      <span>{isLinkCopied ? 'کۆپیکرا' : 'لینکی پۆست'}</span>
+                    </button>
+
                     {isConfirming ? (
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <button

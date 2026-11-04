@@ -787,3 +787,18 @@ footer {
   scrollbar-width: none !important;
 }
 
+.post-highlight {
+  outline: 2px solid var(--ice) !important;
+  box-shadow: 0 0 30px rgba(94, 200, 255, 0.5) !important;
+  animation: postPulse 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes postPulse {
+  0% {
+    box-shadow: 0 0 15px rgba(94, 200, 255, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 35px rgba(94, 200, 255, 0.7);
+  }
+}
+

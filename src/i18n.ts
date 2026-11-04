@@ -46,6 +46,10 @@ export interface Translations {
   code_snippet: string;
   copy_code: string;
   copied: string;
+  post_share: string;
+  post_share_copied: string;
+  post_like: string;
+  post_views: string;
 
   // Contact
   contact_title: string;
@@ -125,6 +129,10 @@ export const translations: Record<Language, Translations> = {
     code_snippet: 'نموونە کۆد',
     copy_code: 'کۆپیکردن',
     copied: 'کۆپیکرا',
+    post_share: 'شەیرکردن',
+    post_share_copied: 'لینکی پۆست کۆپیکرا!',
+    post_like: 'ڵایک',
+    post_views: 'بینین',
 
     contact_title: 'پەیوەندیمان پێوە بکە',
     contact_desc: 'بۆ هەر داواکارییەک، پرسیارێک یان دەستپێکردنی پڕۆژە دەتوانیت پەیوەندیمان پێوە بکەیت.',
@@ -199,6 +207,10 @@ export const translations: Record<Language, Translations> = {
     code_snippet: 'كود برمجي',
     copy_code: 'نسخ الكود',
     copied: 'تم النسخ',
+    post_share: 'مشاركة',
+    post_share_copied: 'تم نسخ رابط المنشور!',
+    post_like: 'إعجاب',
+    post_views: 'مشاهدة',
 
     contact_title: 'تواصل معنا',
     contact_desc: 'لأي استفسار أو لبدء مشروع جديد، يمكنك التواصل معنا عبر المنصات التالية.',
@@ -273,6 +285,10 @@ export const translations: Record<Language, Translations> = {
     code_snippet: 'Code Snippet',
     copy_code: 'Copy Code',
     copied: 'Copied',
+    post_share: 'Share',
+    post_share_copied: 'Post link copied!',
+    post_like: 'Like',
+    post_views: 'Views',
 
     contact_title: 'Get in Touch',
     contact_desc: 'For inquiries, consultations, or starting your next project, reach out anytime.',

@@ -93,6 +93,45 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // Deep link handler for direct shared post links (?post=ID)
+  useEffect(() => {
+    if (typeof window === 'undefined' || posts.length === 0) return;
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const targetPostId = params.get('post') || window.location.hash.replace(/^#post-/, '');
+      if (!targetPostId) return;
+
+      const targetPost = posts.find((p) => p.id === targetPostId);
+      if (targetPost) {
+        if (targetPost.category === 'programming') {
+          setActiveSection('programming');
+        } else if (targetPost.category === 'posts') {
+          setActiveSection('posts');
+        } else if (targetPost.category === 'electronics') {
+          setActiveSection('electronics');
+        } else {
+          setActiveSection('home');
+        }
+
+        const timer = setTimeout(() => {
+          const el = document.getElementById(`post-${targetPostId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('post-highlight');
+            setTimeout(() => {
+              el.classList.remove('post-highlight');
+            }, 3500);
+          }
+        }, 400);
+
+        return () => clearTimeout(timer);
+      }
+    } catch (err) {
+      console.debug('Deep link handling note:', err);
+    }
+  }, [posts]);
+
   // Secret trigger when user clicks on year 2026 in the footer
   const handleOpenAdmin = () => {
     const isAuthed =
