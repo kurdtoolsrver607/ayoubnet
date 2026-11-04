@@ -8,6 +8,7 @@ import {
   type DayStats,
   type Post,
   type SiteSettings,
+  safeStorage,
 } from '../firebase';
 import {
   FileText,
@@ -103,7 +104,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   };
 
   const handleLogout = async () => {
-    localStorage.removeItem('ayoub_admin_auth');
+    safeStorage.remove('ayoub_admin_auth');
     if (auth) {
       try {
         await signOut(auth);

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import type { Post } from '../firebase';
-import { extractDriveFileId } from '../firebase';
+import { extractDriveFileId, formatPostDate } from '../firebase';
 import { DriveImage } from './DriveImage';
+import { ProgrammingTools } from './ProgrammingTools';
 import type { NavSection } from './Navbar';
 import {
   Search,
@@ -14,13 +15,22 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  FileCode,
+  Play,
+  Terminal,
+  Shield,
+  Sparkles,
 } from 'lucide-react';
+import type { Language } from '../i18n';
 
 interface SectionPageProps {
   section: NavSection;
   posts: Post[];
   onBackToHome: () => void;
+  lang?: Language;
 }
+
+type ProgSubTab = 'posts' | 'html' | 'python' | 'encrypt';
 
 const CodeBlock: React.FC<{ code: string }> = ({ code }) => {
   const [copied, setCopied] = useState(false);
@@ -89,45 +99,90 @@ export const SectionPage: React.FC<SectionPageProps> = ({
   section,
   posts,
   onBackToHome,
+  lang = 'ku',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [progSubTab, setProgSubTab] = useState<ProgSubTab>('posts');
+
+  const metaTranslations = {
+    ku: {
+      programming: {
+        title: 'بەشی بەرنامەسازی',
+        desc: 'فێرکاری، نموونە کۆدەکان، پڕۆژەی وێب و ئەپ، ڕەنکردنی کۆد و ستۆدیۆی ئینکریپت.',
+      },
+      posts: {
+        title: 'بەشی پۆستەکان',
+        desc: 'بابەت و ڕاگەیەندراوە تایبەتەکانی ئەم بەشە لە یەک شوێندا.',
+      },
+      electronics: {
+        title: 'بەشی ئەلیکترۆن',
+        desc: 'سیستەمە ئەلیکترۆنییەکان، تاقیکردنەوەی هاردوێر، وردەپارچەکان و ئۆتۆمەیشن.',
+      },
+      home: { title: 'سەرەکی', desc: '' },
+    },
+    ar: {
+      programming: {
+        title: 'قسم البرمجة والتطوير',
+        desc: 'دروس برمجية، مشغلات الأكواد، واستوديو التشفير والحماية المتقدم.',
+      },
+      posts: {
+        title: 'قسم المنشورات',
+        desc: 'أحدث المقالات والإعلانات التقنية في مكان واحد.',
+      },
+      electronics: {
+        title: 'قسم الإلكترونيات',
+        desc: 'الأنظمة الإلكترونية، اختبار العتاد، القطع والأتمتة.',
+      },
+      home: { title: 'الرئيسية', desc: '' },
+    },
+    en: {
+      programming: {
+        title: 'Programming Lab',
+        desc: 'Tutorials, code examples, interactive compilers, and code encryption studio.',
+      },
+      posts: {
+        title: 'Articles & Posts',
+        desc: 'All specialized articles, news, and technical publications.',
+      },
+      electronics: {
+        title: 'Electronics Lab',
+        desc: 'Electronic circuits, hardware prototyping, components, and embedded automation.',
+      },
+      home: { title: 'Home', desc: '' },
+    },
+  };
+
+  const currentMeta = (metaTranslations[lang] || metaTranslations.ku)[section];
 
   const meta = {
-    programming: {
-      title: 'بەشی بەرنامەسازی',
-      desc: 'فێرکاری، نموونە کۆدەکان، پڕۆژەی وێب و ئەپ، و چارەسەری کێشە نەرمەکاڵاییەکان.',
-      icon: <Code size={26} style={{ color: 'var(--ice)' }} />,
-    },
-    posts: {
-      title: 'بەشی پۆستەکان',
-      desc: 'هەواڵ، بابەت و ڕاگەیەندراوە گشتی و تەکنەلۆژییەکان لە یەک شوێندا.',
-      icon: <MessageSquare size={26} style={{ color: 'var(--vio)' }} />,
-    },
-    electronics: {
-      title: 'بەشی ئەلیکترۆن',
-      desc: 'سیستەمە ئەلیکترۆنییەکان، تاقیکردنەوەی هاردوێر، وردەپارچەکان و ئۆتۆمەیشن.',
-      icon: <Cpu size={26} style={{ color: 'var(--s)' }} />,
-    },
-    home: {
-      title: 'سەرەکی',
-      desc: '',
-      icon: null,
-    },
-  }[section];
+    title: currentMeta.title,
+    desc: currentMeta.desc,
+    icon:
+      section === 'programming' ? (
+        <Code size={26} style={{ color: 'var(--ice)' }} />
+      ) : section === 'posts' ? (
+        <MessageSquare size={26} style={{ color: 'var(--vio)' }} />
+      ) : section === 'electronics' ? (
+        <Cpu size={26} style={{ color: 'var(--s)' }} />
+      ) : null,
+  };
 
-  // Filter posts by category
+  // Strictly filter posts by category - exactly as requested:
+  // - programming shows ONLY programming posts
+  // - electronics shows ONLY electronics posts
+  // - posts shows ONLY posts category
   const sectionPosts = useMemo(() => {
     return posts.filter((p) => {
       if (section === 'programming') {
-        return p.category === 'programming' || p.type === 'code';
+        return p.category === 'programming';
       }
       if (section === 'electronics') {
         return p.category === 'electronics';
       }
       if (section === 'posts') {
-        return p.category === 'posts' || p.category === 'general' || !p.category;
+        return p.category === 'posts';
       }
-      return true;
+      return false;
     });
   }, [posts, section]);
 
@@ -141,22 +196,6 @@ export const SectionPage: React.FC<SectionPageProps> = ({
       return matchTitle || matchText;
     });
   }, [sectionPosts, searchQuery]);
-
-  const formatDate = (post: Post) => {
-    if (post.t && typeof post.t === 'object' && 'toDate' in post.t && typeof post.t.toDate === 'function') {
-      try {
-        const d = post.t.toDate();
-        return d.toLocaleDateString('ckb-IQ', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        });
-      } catch {
-        return '';
-      }
-    }
-    return '';
-  };
 
   return (
     <div className="wrap" style={{ paddingTop: '30px', paddingBottom: '60px' }}>
@@ -177,7 +216,7 @@ export const SectionPage: React.FC<SectionPageProps> = ({
           گەڕانەوە بۆ سەرەکی
         </button>
 
-        <div className="glass" style={{ padding: '26px 30px', borderRadius: '18px' }}>
+        <div className="glass" style={{ padding: '26px 30px', borderRadius: '18px', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
             {meta.icon}
             <h1 style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)', margin: 0, fontWeight: 800 }}>
@@ -188,170 +227,247 @@ export const SectionPage: React.FC<SectionPageProps> = ({
             {meta.desc}
           </p>
 
-          {/* Search Bar */}
-          <div style={{ marginTop: '20px', position: 'relative' }}>
-            <input
-              type="text"
-              placeholder={`گەڕان لەناو ${meta.title} بەپێی ناونیشان یان ناوەڕۆک...`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 44px 12px 18px',
-                borderRadius: '12px',
-                border: '1px solid var(--line2)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                color: 'var(--text)',
-                fontSize: '0.92rem',
-                fontFamily: 'inherit',
-                outline: 'none',
-              }}
-            />
-            <Search
-              size={18}
-              style={{
-                position: 'absolute',
-                right: '16px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--ice)',
-                pointerEvents: 'none',
-              }}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
+          {/* Programming Subsection Horizontal Tabs (lined up at top with hidden scrollbar) */}
+          {section === 'programming' && (
+            <div style={{ marginTop: '22px', borderTop: '1px solid var(--line2)', paddingTop: '16px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '10px' }}>
+                بەشەکانی بەرنامەسازی هەڵبژێرە:
+              </span>
+              <div
+                className="no-scrollbar"
                 style={{
-                  position: 'absolute',
-                  left: '14px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--muted)',
-                  cursor: 'pointer',
-                  fontSize: '0.78rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  overflowX: 'auto',
+                  whiteSpace: 'nowrap',
+                  padding: '4px 2px',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch',
                 }}
               >
-                پاککردنەوە
-              </button>
-            )}
-          </div>
+                {[
+                  { id: 'posts', label: `پۆستەکان (${sectionPosts.length})`, icon: <FileCode size={15} /> },
+                  { id: 'html', label: 'ڕەنکردنی HTML / JS', icon: <Play size={15} /> },
+                  { id: 'python', label: 'ڕەنکردنی پایتۆن', icon: <Terminal size={15} /> },
+                  { id: 'encrypt', label: 'ئینکریپت و پاراستنی کۆد', icon: <Shield size={15} /> },
+                ].map((tab) => {
+                  const isActive = progSubTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setProgSubTab(tab.id as ProgSubTab)}
+                      style={{
+                        background: isActive ? 'linear-gradient(135deg, var(--ice), var(--vio))' : 'rgba(255, 255, 255, 0.05)',
+                        color: isActive ? '#05080f' : 'var(--text)',
+                        border: '1px solid var(--line2)',
+                        padding: '9px 18px',
+                        borderRadius: '12px',
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: '0.86rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '7px',
+                        fontFamily: 'inherit',
+                        transition: 'all 0.2s',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {tab.icon}
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-          <div style={{ marginTop: '10px', fontSize: '0.78rem', color: 'var(--muted)' }}>
-            نیشاندانی {filteredPosts.length} لە کۆی {sectionPosts.length} بابەت
-          </div>
+          {/* Search Bar - only show when viewing posts */}
+          {(section !== 'programming' || progSubTab === 'posts') && (
+            <div style={{ marginTop: '20px', position: 'relative' }}>
+              <input
+                type="text"
+                placeholder={`گەڕان لەناو ${meta.title} بەپێی ناونیشان یان ناوەڕۆک...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 44px 12px 18px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--line2)',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: 'var(--text)',
+                  fontSize: '0.92rem',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+              />
+              <Search
+                size={18}
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--ice)',
+                  pointerEvents: 'none',
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    position: 'absolute',
+                    left: '14px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--muted)',
+                    cursor: 'pointer',
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  پاککردنەوە
+                </button>
+              )}
+            </div>
+          )}
+
+          {(section !== 'programming' || progSubTab === 'posts') && (
+            <div style={{ marginTop: '10px', fontSize: '0.78rem', color: 'var(--muted)' }}>
+              نیشاندانی {filteredPosts.length} لە کۆی {sectionPosts.length} پۆست
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Posts List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        {filteredPosts.map((post) => {
-          const dateStr = formatDate(post);
-          const isHttps = /^https:/.test(post.url || '');
+      {/* Programming Section View Switcher */}
+      {section === 'programming' && progSubTab === 'html' && (
+        <ProgrammingTools initialTab="html" />
+      )}
 
-          return (
-            <article
-              key={post.id}
-              className="glass rv in"
-              style={{
-                padding: '24px',
-                borderRadius: '16px',
-                border: '1px solid var(--line)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-              }}
-            >
-              {/* Post Header: Title & Date */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
-                  {post.title || (post.type === 'code' ? 'نموونە کۆد' : 'بابەت')}
-                </h3>
+      {section === 'programming' && progSubTab === 'python' && (
+        <ProgrammingTools initialTab="python" />
+      )}
 
-                {dateStr && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--muted)' }}>
-                    <Calendar size={13} />
-                    <span>{dateStr}</span>
-                  </div>
-                )}
-              </div>
+      {section === 'programming' && progSubTab === 'encrypt' && (
+        <ProgrammingTools initialTab="encrypt" />
+      )}
 
-              {/* Post Content */}
-              {post.type === 'code' ? (
-                <CodeBlock code={post.text || ''} />
-              ) : (
-                <>
-                  {post.text && (
-                    <p style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--text)', fontSize: '0.94rem', lineHeight: 1.8 }}>
-                      {post.text}
-                    </p>
+      {/* Posts List (Shown when not in runner/encrypt subtabs, or in non-programming sections) */}
+      {(section !== 'programming' || progSubTab === 'posts') && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {filteredPosts.map((post) => {
+            const dateStr = formatPostDate(post.t);
+            const isHttps = /^(https:|data:image\/)/.test(post.url || '');
+
+            return (
+              <article
+                key={post.id}
+                className="glass rv in"
+                style={{
+                  padding: '24px',
+                  borderRadius: '16px',
+                  border: '1px solid var(--line)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                {/* Post Header: Title & Date */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
+                    {post.title || (post.type === 'code' ? 'نموونە کۆد' : 'بابەت')}
+                  </h3>
+
+                  {dateStr && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--muted)' }}>
+                      <Calendar size={13} />
+                      <span>{dateStr}</span>
+                    </div>
                   )}
+                </div>
 
-                  {post.type === 'image' && isHttps && post.url && (
-                    <DriveImage url={post.url} alt={post.title || ''} />
-                  )}
+                {/* Post Content */}
+                {post.type === 'code' ? (
+                  <CodeBlock code={post.text || ''} />
+                ) : (
+                  <>
+                    {post.text && (
+                      <p style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--text)', fontSize: '0.94rem', lineHeight: 1.8 }}>
+                        {post.text}
+                      </p>
+                    )}
 
-                  {post.type === 'video' && isHttps && post.url && (
-                    (() => {
-                      const driveId = extractDriveFileId(post.url);
-                      if (driveId) {
+                    {post.type === 'image' && isHttps && post.url && (
+                      <DriveImage url={post.url} backupUrl={post.backupUrl} alt={post.title || ''} />
+                    )}
+
+                    {post.type === 'video' && isHttps && post.url && (
+                      (() => {
+                        const driveId = extractDriveFileId(post.url);
+                        if (driveId) {
+                          return (
+                            <div style={{ marginTop: '10px', width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', aspectRatio: '16/9', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--line)' }}>
+                              <iframe
+                                src={`https://drive.google.com/file/d/${driveId}/preview`}
+                                style={{ width: '100%', height: '100%', border: 'none' }}
+                                allow="autoplay; encrypted-media"
+                                allowFullScreen
+                                title={post.title || 'Video'}
+                              />
+                            </div>
+                          );
+                        }
                         return (
-                          <div style={{ marginTop: '10px', width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', aspectRatio: '16/9', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--line)' }}>
-                            <iframe
-                              src={`https://drive.google.com/file/d/${driveId}/preview`}
-                              style={{ width: '100%', height: '100%', border: 'none' }}
-                              allow="autoplay; encrypted-media"
-                              allowFullScreen
-                              title={post.title || 'Video'}
+                          <div style={{ marginTop: '8px' }}>
+                            <video
+                              src={post.url}
+                              controls
+                              preload="metadata"
+                              playsInline
+                              style={{
+                                maxWidth: '100%',
+                                borderRadius: '12px',
+                                display: 'block',
+                                border: '1px solid var(--line)',
+                              }}
                             />
                           </div>
                         );
-                      }
-                      return (
-                        <div style={{ marginTop: '8px' }}>
-                          <video
-                            src={post.url}
-                            controls
-                            preload="metadata"
-                            playsInline
-                            style={{
-                              maxWidth: '100%',
-                              borderRadius: '12px',
-                              display: 'block',
-                              border: '1px solid var(--line)',
-                            }}
-                          />
-                        </div>
-                      );
-                    })()
-                  )}
-                </>
-              )}
-            </article>
-          );
-        })}
+                      })()
+                    )}
+                  </>
+                )}
+              </article>
+            );
+          })}
 
-        {filteredPosts.length === 0 && (
-          <div
-            className="glass"
-            style={{
-              textAlign: 'center',
-              padding: '50px 20px',
-              borderRadius: '16px',
-              color: 'var(--muted)',
-            }}
-          >
-            <p style={{ fontSize: '1rem', marginBottom: '8px' }}>
-              {searchQuery ? `هیچ ئەنجامێک بۆ "${searchQuery}" نەدۆزرایەوە` : 'هێشتا هیچ پۆستێک لەم بەشەدا بڵاونەکراوەتەوە.'}
-            </p>
-            <small style={{ fontSize: '0.8rem' }}>
-              دەتوانیت لە ڕێگەی پەڕەی ئەدمینەوە لەم بەشەدا پۆست دابنێیت.
-            </small>
-          </div>
-        )}
-      </div>
+          {filteredPosts.length === 0 && (
+            <div
+              className="glass"
+              style={{
+                textAlign: 'center',
+                padding: '50px 20px',
+                borderRadius: '16px',
+                color: 'var(--muted)',
+              }}
+            >
+              <p style={{ fontSize: '1rem', marginBottom: '8px' }}>
+                {searchQuery ? `هیچ ئەنجامێک بۆ "${searchQuery}" نەدۆزرایەوە` : 'هێشتا هیچ پۆستێک لەم بەشەدا بڵاونەکراوەتەوە.'}
+              </p>
+              <small style={{ fontSize: '0.8rem' }}>
+                دەتوانیت لە ڕێگەی پەڕەی ئەدمینەوە پۆست لەم بەشەدا زیاد بکەیت.
+              </small>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,6 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import type { VisitorStats, DayStats } from '../firebase';
+import { translations, type Language } from '../i18n';
 
 interface FooterProps {
   stats: {
@@ -8,26 +9,17 @@ interface FooterProps {
   };
   siteName: string;
   onOpenAdmin: () => void;
+  lang?: Language;
 }
 
-export const Footer: React.FC<FooterProps> = ({ stats, siteName, onOpenAdmin }) => {
-  const clickCountRef = useRef(0);
-  const lastClickTimeRef = useRef(0);
+export const Footer: React.FC<FooterProps> = ({
+  stats,
+  siteName,
+  onOpenAdmin,
+  lang = 'ku',
+}) => {
   const numFormatter = new Intl.NumberFormat('en-US');
-
-  const handleYearClick = () => {
-    const now = Date.now();
-    if (now - lastClickTimeRef.current > 2000) {
-      clickCountRef.current = 0;
-    }
-    lastClickTimeRef.current = now;
-    clickCountRef.current += 1;
-
-    if (clickCountRef.current >= 5) {
-      clickCountRef.current = 0;
-      onOpenAdmin();
-    }
-  };
+  const t = translations[lang] || translations.ku;
 
   const hasStats = stats.total.opens > 0 || stats.total.unique > 0 || stats.today.unique > 0;
 
@@ -37,25 +29,47 @@ export const Footer: React.FC<FooterProps> = ({ stats, siteName, onOpenAdmin }) 
         <div className="stats">
           <div className="glass">
             <b>{numFormatter.format(stats.total.unique || 0)}</b>
-            <small>سەردانیکەری جیاواز</small>
+            <small>{t.stats_unique}</small>
           </div>
           <div className="glass">
             <b>{numFormatter.format(stats.today.unique || 0)}</b>
-            <small>سەردانیکەری ئەمڕۆ</small>
+            <small>{t.stats_today}</small>
           </div>
           <div className="glass">
             <b>{numFormatter.format(stats.total.opens || 0)}</b>
-            <small>جار کراوەتەوە</small>
+            <small>{t.stats_opens}</small>
           </div>
         </div>
       )}
+
       <p
         id="yr"
-        onClick={handleYearClick}
-        style={{ marginTop: '6px', padding: '28px 10px', cursor: 'pointer' }}
-        title={`© 2026 ${siteName}`}
+        style={{
+          marginTop: '6px',
+          padding: '24px 10px',
+          userSelect: 'none',
+          color: 'var(--muted)',
+          fontSize: '0.86rem',
+        }}
       >
-        © 2026 {siteName}
+        ©{' '}
+        <span
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenAdmin();
+          }}
+          style={{
+            cursor: 'pointer',
+            transition: 'color 0.2s',
+            fontWeight: 600,
+            display: 'inline-block',
+          }}
+          className="secret-admin-trigger"
+          title="2026"
+        >
+          2026
+        </span>{' '}
+        {siteName} - {t.copyright}
       </p>
     </footer>
   );

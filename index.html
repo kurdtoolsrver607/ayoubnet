@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&family=Vazirmatn:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="/assets/app.css">
+  <link rel="stylesheet" href="./assets/app.css">
 
   <style>
     @font-face {
@@ -271,6 +271,16 @@
       .about { grid-template-columns: 1fr; padding: 28px; }
       nav ul { gap: 10px; }
     }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
   </style>
 </head>
 <body>
@@ -383,7 +393,7 @@
     </footer>
   </div>
 
-  <!-- Smart Universal Script Loader: Loads /src/main.tsx in dev and pre-compiled /assets/app.js on GitHub Pages / ayoubi.site -->
+  <!-- Smart Universal Script Loader: Loads /src/main.tsx in dev and pre-compiled assets/app.js on GitHub Pages / ayoubi.site -->
   <script>
     (function() {
       var isViteDev = (
@@ -394,14 +404,20 @@
         location.hostname.indexOf('aistudio') !== -1
       );
 
+      var p = location.pathname;
+      var basePath = (p.endsWith('.html') || (!p.endsWith('/') && p.lastIndexOf('/') !== -1))
+        ? p.substring(0, p.lastIndexOf('/') + 1)
+        : p;
+      if (!basePath.endsWith('/')) basePath += '/';
+
       var script = document.createElement('script');
       script.type = 'module';
-      script.src = isViteDev ? '/src/main.tsx' : '/assets/app.js';
+      script.src = isViteDev ? '/src/main.tsx' : (basePath + 'assets/app.js');
       script.onerror = function() {
         if (isViteDev) {
           var fb = document.createElement('script');
           fb.type = 'module';
-          fb.src = '/assets/app.js';
+          fb.src = basePath + 'assets/app.js';
           document.body.appendChild(fb);
         }
       };

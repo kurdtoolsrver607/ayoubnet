@@ -13,6 +13,7 @@ import {
   type SiteSettings,
   DEFAULT_SITE_SETTINGS,
   type User,
+  safeStorage,
 } from './firebase';
 import { Navbar, type NavSection } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -22,11 +23,15 @@ import { Posts } from './components/Posts';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { SectionPage } from './components/SectionPage';
+import { AdminPage } from './components/AdminPage';
 import { AdminLoginModal } from './components/AdminLoginModal';
-import { AdminPanelModal } from './components/AdminPanelModal';
 import { AmbientEffects } from './components/AmbientEffects';
+import { type Language } from './i18n';
 
 export const App: React.FC = () => {
+  const [lang, setLang] = useState<Language>(() => {
+    return (safeStorage.get('ayoub_lang') as Language) || 'ku';
+  });
   const [stats, setStats] = useState<{ total: VisitorStats; today: DayStats }>({
     total: { unique: 0, opens: 0 },
     today: { unique: 0, opens: 0 },
@@ -35,8 +40,20 @@ export const App: React.FC = () => {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
   const [activeSection, setActiveSection] = useState<NavSection>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+
+  // Sync document language and direction
+  useEffect(() => {
+    try {
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === 'en' ? 'ltr' : 'rtl';
+    } catch {}
+  }, [lang]);
+
+  const handleLanguageChange = (newLang: Language) => {
+    setLang(newLang);
+    safeStorage.set('ayoub_lang', newLang);
+  };
 
   useEffect(() => {
     // Record visitor count
@@ -68,36 +85,26 @@ export const App: React.FC = () => {
       });
     }
 
-    // Escape key listener for modals
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsLoginModalOpen(false);
-        setIsAdminPanelOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       unsubStats();
       unsubPosts();
       unsubSettings();
       unsubAuth();
-      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
+  // Secret trigger when user clicks on year 2026 in the footer
   const handleOpenAdmin = () => {
-    const isAdmin = (currentUser && !currentUser.isAnonymous) || localStorage.getItem('ayoub_admin_auth') === '1';
-    if (isAdmin) {
-      setIsAdminPanelOpen(true);
-    } else {
-      setIsLoginModalOpen(true);
-    }
-  };
+    const isAuthed =
+      safeStorage.get('ayoub_admin_auth') === '1' ||
+      (auth?.currentUser && !auth.currentUser.isAnonymous);
 
-  const handleLoginSuccess = () => {
-    setIsLoginModalOpen(false);
-    setIsAdminPanelOpen(true);
+    if (isAuthed) {
+      setActiveSection('admin');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setShowAdminLoginModal(true);
+    }
   };
 
   const handleSaveSettings = async (newSettings: SiteSettings) => {
@@ -116,16 +123,29 @@ export const App: React.FC = () => {
           setActiveSection(sec);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        lang={lang}
+        onLanguageChange={handleLanguageChange}
       />
 
       {activeSection === 'home' ? (
         <main className="wrap">
-          <Hero siteName={siteSettings.name} subtitle={siteSettings.subtitle} />
-          <Services />
-          <About />
-          <Posts posts={posts} />
-          <Contact />
+          <Hero siteName={siteSettings.name} subtitle={siteSettings.subtitle} lang={lang} />
+          <Services lang={lang} />
+          <About lang={lang} />
+          <Posts posts={posts} lang={lang} />
+          <Contact lang={lang} />
         </main>
+      ) : activeSection === 'admin' ? (
+        <AdminPage
+          stats={stats}
+          posts={posts}
+          siteSettings={siteSettings}
+          onSaveSettings={handleSaveSettings}
+          onBackToHome={() => {
+            setActiveSection('home');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
       ) : (
         <SectionPage
           section={activeSection}
@@ -134,28 +154,30 @@ export const App: React.FC = () => {
             setActiveSection('home');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          lang={lang}
         />
       )}
 
-      <Footer
-        stats={stats}
-        siteName={siteSettings.name}
-        onOpenAdmin={handleOpenAdmin}
-      />
+      {activeSection !== 'admin' && (
+        <Footer
+          stats={stats}
+          siteName={siteSettings.name}
+          onOpenAdmin={handleOpenAdmin}
+          lang={lang}
+        />
+      )}
 
+      {/* Secret Admin Login Modal (Triggered ONLY by clicking year "2026") */}
       <AdminLoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
-
-      <AdminPanelModal
-        isOpen={isAdminPanelOpen}
-        onClose={() => setIsAdminPanelOpen(false)}
-        stats={stats}
-        posts={posts}
-        siteSettings={siteSettings}
-        onSaveSettings={handleSaveSettings}
+        isOpen={showAdminLoginModal}
+        onClose={() => setShowAdminLoginModal(false)}
+        onSuccess={() => {
+          setShowAdminLoginModal(false);
+          setActiveSection('admin');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        siteName={siteSettings.name}
+        lang={lang}
       />
     </>
   );

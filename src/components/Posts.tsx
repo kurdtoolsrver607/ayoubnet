@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import type { Post } from '../firebase';
-import { extractDriveFileId } from '../firebase';
+import { extractDriveFileId, formatPostDate } from '../firebase';
 import { DriveImage } from './DriveImage';
-import { Tag } from 'lucide-react';
+import { translations, type Language } from '../i18n';
 
 interface PostsProps {
   posts: Post[];
+  lang?: Language;
 }
 
-const CodePostCard: React.FC<{ text: string }> = ({ text }) => {
+const CodePostCard: React.FC<{ text: string; lang?: Language }> = ({ text, lang = 'ku' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const lineCount = (text || '').split('\n').length;
   const isLong = lineCount > 8;
+  const t = translations[lang] || translations.ku;
 
   return (
     <div className={`cb ${isOpen ? 'open' : ''}`}>
@@ -24,48 +26,35 @@ const CodePostCard: React.FC<{ text: string }> = ({ text }) => {
           className="more"
           onClick={() => setIsOpen(!isOpen)}
         >
-          {isOpen ? 'کەمتر' : 'زیاتر ببینە'}
+          {isOpen ? t.read_less : t.read_more}
         </button>
       )}
     </div>
   );
 };
 
-export const Posts: React.FC<PostsProps> = ({ posts }) => {
-  // Only show general / home feed posts
+export const Posts: React.FC<PostsProps> = ({ posts, lang = 'ku' }) => {
+  const t = translations[lang] || translations.ku;
+
+  // Only show general / عام home feed posts (strictly separated from other sections)
   const homePosts = posts.filter(
-    (p) => !p.category || p.category === 'general' || p.category === 'posts'
+    (p) => !p.category || p.category === 'general'
   );
 
   if (!homePosts || homePosts.length === 0) {
     return null;
   }
 
-  const formatDate = (post: Post) => {
-    if (post.t && typeof post.t === 'object' && 'toDate' in post.t && typeof post.t.toDate === 'function') {
-      try {
-        return post.t.toDate().toLocaleDateString('ckb-IQ', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        });
-      } catch {
-        return '';
-      }
-    }
-    return '';
-  };
-
   return (
     <section id="posts">
       <div className="head rv in">
-        <h2>پۆستە گشتییەکان</h2>
-        <p>دوایین ڕاگەیاندن و پۆستە بڵاوکراوەکان.</p>
+        <h2>{t.posts_feed_title}</h2>
+        <p>{t.posts_feed_desc}</p>
       </div>
       <div id="plist">
         {homePosts.map((post) => {
-          const dateStr = formatDate(post);
-          const isHttps = /^https:/.test(post.url || '');
+          const dateStr = formatPostDate(post.t);
+          const isHttps = /^(https:|data:image\/)/.test(post.url || '');
 
           return (
             <article key={post.id} className="post glass rv in" style={{ marginBottom: '18px' }}>
@@ -80,12 +69,12 @@ export const Posts: React.FC<PostsProps> = ({ posts }) => {
               </div>
 
               {post.type === 'code' ? (
-                <CodePostCard text={post.text || ''} />
+                <CodePostCard text={post.text || ''} lang={lang} />
               ) : (
                 <>
                   {post.text && <p style={{ fontSize: '0.92rem', lineHeight: 1.8 }}>{post.text}</p>}
                   {post.type === 'image' && isHttps && post.url && (
-                    <DriveImage url={post.url} alt={post.title || ''} />
+                    <DriveImage url={post.url} backupUrl={post.backupUrl} alt={post.title || ''} />
                   )}
                   {post.type === 'video' && isHttps && post.url && (
                     (() => {

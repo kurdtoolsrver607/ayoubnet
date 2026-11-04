@@ -4,22 +4,26 @@ export const AmbientEffects: React.FC = () => {
   const spotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const canHover = window.matchMedia('(hover: hover)').matches;
+    try {
+      const isReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)')?.matches;
+      const canHover = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover)')?.matches;
 
-    if (!canHover || isReducedMotion || !spotRef.current) return;
+      if (!canHover || isReducedMotion || !spotRef.current) return;
 
-    const spotEl = spotRef.current;
+      const spotEl = spotRef.current;
 
-    const handlePointerMove = (e: PointerEvent) => {
-      spotEl.style.opacity = '1';
-      spotEl.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
-    };
+      const handlePointerMove = (e: PointerEvent) => {
+        spotEl.style.opacity = '1';
+        spotEl.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+      };
 
-    window.addEventListener('pointermove', handlePointerMove);
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-    };
+      window.addEventListener('pointermove', handlePointerMove);
+      return () => {
+        window.removeEventListener('pointermove', handlePointerMove);
+      };
+    } catch {
+      return;
+    }
   }, []);
 
   return (

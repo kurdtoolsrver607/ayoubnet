@@ -1,23 +1,35 @@
 import React from 'react';
+import { translations, type Language } from '../i18n';
 
 interface HeroProps {
   siteName: string;
-  subtitle: string;
+  subtitle?: string;
+  lang?: Language;
 }
 
-export const Hero: React.FC<HeroProps> = ({ siteName, subtitle }) => {
+export const Hero: React.FC<HeroProps> = ({ siteName, subtitle, lang = 'ku' }) => {
+  const t = translations[lang] || translations.ku;
+
   return (
     <header className="hero">
       <div>
         <h1>
-          بیرۆکەکانت دەکەم بە سیستمێکی کارا لەگەڵ <b>{siteName}</b>
+          {lang === 'en' ? (
+            <>Transforming ideas into digital reality with <b>{siteName}</b></>
+          ) : lang === 'ar' ? (
+            <>نحوّل أفكارك إلى أنظمة ذكية متطورة مع <b>{siteName}</b></>
+          ) : (
+            <>بیرۆکەکانت دەکەم بە سیستمێکی کارا لەگەڵ <b>{siteName}</b></>
+          )}
         </h1>
         <p className="lead">
-          {subtitle || 'بازرگانی، دروستکردنی وێبسایت و ئەپ، دیزاینی وێنە و ڤیدیۆ، و سیستمە دەستکردەکان؛ هەموو لە یەک شوێن.'}
+          {lang === 'ku' && subtitle
+            ? subtitle
+            : t.hero_desc}
         </p>
         <div className="btns">
           <a className="btn pri" href="#services">
-            بینینی خزمەتگوزارییەکان
+            {t.hero_btn_services}
           </a>
           <a
             className="btn"
@@ -25,7 +37,7 @@ export const Hero: React.FC<HeroProps> = ({ siteName, subtitle }) => {
             target="_blank"
             rel="noopener noreferrer"
           >
-            دەستپێکردنی پڕۆژە
+            {t.hero_btn_contact}
           </a>
         </div>
       </div>
@@ -38,28 +50,16 @@ export const Hero: React.FC<HeroProps> = ({ siteName, subtitle }) => {
         </div>
         <pre>
           <span className="l" style={{ animationDelay: '0.2s' }}>
-            <span className="k">const</span> <span className="p">{siteName.toLowerCase()}</span> = {'{'}
+            <span className="kw">const</span> platform = <span className="str">"{siteName}.site"</span>;
           </span>
-          <span className="l" style={{ animationDelay: '0.55s' }}>
-            {'  '}brand: <span className="s">"{siteName}"</span>,
+          <span className="l" style={{ animationDelay: '0.4s' }}>
+            <span className="kw">const</span> status = <span className="str">"Online 2026"</span>;
           </span>
-          <span className="l" style={{ animationDelay: '0.9s' }}>
-            {'  '}domain: <span className="s">"ayoubi.site"</span>,
+          <span className="l" style={{ animationDelay: '0.6s' }}>
+            <span className="fn">launch</span>({"{"} services: <span className="kw">true</span> {"}"});
           </span>
-          <span className="l" style={{ animationDelay: '1.25s' }}>
-            {'  '}build: [<span className="s">"websites"</span>, <span className="s">"apps"</span>],
-          </span>
-          <span className="l" style={{ animationDelay: '1.6s' }}>
-            {'  '}design: [<span className="s">"image"</span>, <span className="s">"video"</span>],
-          </span>
-          <span className="l" style={{ animationDelay: '1.95s' }}>
-            {'  '}ai: <span className="s">"automation systems"</span>,
-          </span>
-          <span className="l" style={{ animationDelay: '2.3s' }}>
-            {'  '}status: <span className="s">"open for projects"</span>
-          </span>
-          <span className="l" style={{ animationDelay: '2.65s' }}>
-            {'}'};<span className="cur" />
+          <span className="l" style={{ animationDelay: '0.8s' }}>
+            <span className="cm">// Fast, secure and innovative</span>
           </span>
         </pre>
       </div>

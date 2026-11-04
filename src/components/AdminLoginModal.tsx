@@ -1,197 +1,166 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   auth,
-  ADMIN_EMAIL,
   signInWithEmailAndPassword,
+  ADMIN_EMAIL,
   sendAdminPasswordReset,
+  safeStorage,
 } from '../firebase';
-import { KeyRound, Mail, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { translations, type Language } from '../i18n';
+import {
+  X,
+  ShieldCheck,
+  Mail,
+  KeyRound,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Lock,
+} from 'lucide-react';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: () => void;
+  onSuccess: () => void;
+  siteName: string;
+  lang: Language;
 }
 
 export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   isOpen,
   onClose,
-  onLoginSuccess,
+  onSuccess,
+  siteName,
+  lang,
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [infoMsg, setInfoMsg] = useState('');
-  const [isLocked, setIsLocked] = useState(false);
-  const [lockSeconds, setLockSeconds] = useState(0);
-  const [failedCount, setFailedCount] = useState(0);
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockSeconds, setLockSeconds] = useState(0);
 
-  const getLockLeft = (): number => {
-    const lk = Number(localStorage.getItem('lk') || 0);
-    return Math.max(0, Math.ceil((lk - Date.now()) / 1000));
-  };
+  const t = translations[lang] || translations.ku;
 
+  // Check lockout on open
   useEffect(() => {
     if (!isOpen) return;
-
-    const f = Number(localStorage.getItem('f') || 0);
-    setFailedCount(f);
-
-    const left = getLockLeft();
+    const lk = Number(safeStorage.get('lk') || 0);
+    const left = Math.max(0, Math.ceil((lk - Date.now()) / 1000));
     if (left > 0) {
       setIsLocked(true);
       setLockSeconds(left);
-      setErrorMsg(`هەوڵی زۆرت دا، ${left} چرکە چاوەڕێ بکە`);
     } else {
       setIsLocked(false);
-      setErrorMsg('');
-      inputRef.current?.focus();
+      setLockSeconds(0);
     }
-
-    const interval = setInterval(() => {
-      const remaining = getLockLeft();
-      if (remaining > 0) {
-        setIsLocked(true);
-        setLockSeconds(remaining);
-        setErrorMsg(`هەوڵی زۆرت دا، ${remaining} چرکە چاوەڕێ بکە`);
-      } else {
-        setIsLocked(false);
-        setLockSeconds(0);
-        setErrorMsg((prev) => (prev.startsWith('هەوڵی زۆرت دا') ? '' : prev));
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
   }, [isOpen]);
+
+  // Lockout timer
+  useEffect(() => {
+    if (!isLocked || lockSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockSeconds((prev) => {
+        if (prev <= 1) {
+          setIsLocked(false);
+          safeStorage.remove('lk');
+          safeStorage.set('f', '0');
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isLocked, lockSeconds]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) {
-      setErrorMsg('نەتوانرا سیستەمی فایربەیس دەستپێبکات');
-      return;
-    }
-
-    const left = getLockLeft();
-    if (left > 0) return;
+    if (isLocked) return;
 
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPw = password.trim();
 
-    if (!trimmedEmail) {
-      setErrorMsg('تکایە سەرەتا ئیمەیڵ بنووسە');
-      return;
-    }
-
-    if (!trimmedPw) {
-      setErrorMsg('تکایە پاسۆرد بنووسە');
+    if (!trimmedEmail || !trimmedPw) {
+      setError(lang === 'en' ? 'Please enter email and password' : lang === 'ar' ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور' : 'تکایە ئیمەیڵ و وشەی تێپەڕ بنووسە');
       return;
     }
 
     setLoading(true);
-    setErrorMsg('');
-    setInfoMsg('');
+    setError('');
+    setInfo('');
 
-    // Must be the authorized admin email
+    // Admin email check
     if (trimmedEmail !== ADMIN_EMAIL.toLowerCase()) {
-      const f = Number(localStorage.getItem('f') || 0) + 1;
-      localStorage.setItem('f', String(f));
-      setFailedCount(f);
-      setErrorMsg('ئەم ئیمەیڵە ڕێگەپێدراو نییە یان هەڵەیە');
+      const f = Number(safeStorage.get('f') || 0) + 1;
+      safeStorage.set('f', String(f));
+      setError(t.admin_email_invalid);
       setLoading(false);
       return;
     }
 
-    // Check master PIN (requires correct email)
+    // Master PIN Check
     if (trimmedPw === '224080') {
-      localStorage.setItem('ayoub_admin_auth', '1');
-      localStorage.setItem('f', '0');
-      if (auth && !auth.currentUser) {
-        import('../firebase').then(({ signInAnonymously }) => {
-          if (auth) signInAnonymously(auth).catch(() => {});
-        });
-      }
-      setPassword('');
-      setEmail('');
+      safeStorage.set('ayoub_admin_auth', '1');
+      safeStorage.set('f', '0');
       setLoading(false);
-      onLoginSuccess();
+      setPassword('');
+      onSuccess();
       return;
     }
 
     try {
-      await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPw);
-      localStorage.setItem('ayoub_admin_auth', '1');
-      localStorage.setItem('f', '0');
+      if (auth) {
+        await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPw);
+      }
+      safeStorage.set('ayoub_admin_auth', '1');
+      safeStorage.set('f', '0');
       setPassword('');
-      setEmail('');
-      onLoginSuccess();
+      onSuccess();
     } catch (err: unknown) {
-      const cd = (err && typeof err === 'object' && 'code' in err ? String(err.code) : '') || '';
-      const msg = err instanceof Error ? err.message : String(err);
-
-      if (cd === 'auth/user-not-found') {
-        setErrorMsg(`ئەم ئیمەیڵە لە فایربەیس تۆمار نەکراوە: ${trimmedEmail}`);
-        setLoading(false);
-        return;
-      }
-
-      if (!/invalid-credential|wrong-password|user-not-found|invalid-login/.test(cd)) {
-        setErrorMsg(`هەڵە ڕوویدا: ${cd || msg}`);
-        setLoading(false);
-        setPassword('');
-        return;
-      }
-
-      const f = Number(localStorage.getItem('f') || 0) + 1;
-      localStorage.setItem('f', String(f));
-      setFailedCount(f);
+      const f = Number(safeStorage.get('f') || 0) + 1;
+      safeStorage.set('f', String(f));
 
       if (f >= 3) {
-        const lockoutTime = Date.now() + (f === 3 ? 30000 : 60000);
-        localStorage.setItem('lk', String(lockoutTime));
-        const rem = Math.ceil((lockoutTime - Date.now()) / 1000);
+        const lockoutTime = Date.now() + 45000;
+        safeStorage.set('lk', String(lockoutTime));
         setIsLocked(true);
-        setLockSeconds(rem);
-        setErrorMsg(`٣ جار هەوڵی هەڵەت دا! دەتوانیت لە خوارەوە پاسۆرد ڕیسێت بکەیت.`);
+        setLockSeconds(45);
+        setError(t.admin_lockout_msg);
       } else {
-        setErrorMsg(`پاسۆردەکە هەڵەیە (${3 - f} هەوڵی تر ماوە)`);
+        setError(`${t.admin_pw_wrong} (${3 - f} ${t.admin_attempts_left})`);
       }
     } finally {
       setLoading(false);
-      setPassword('');
     }
   };
 
-  const handlePasswordReset = async () => {
-    const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail) {
-      setErrorMsg('تکایە سەرەتا ئیمەیڵەکەت لە خانەی سەرەوە بنووسە بۆ ناردنی نامەی ڕیسێت');
-      return;
-    }
-
-    if (trimmedEmail !== ADMIN_EMAIL.toLowerCase()) {
-      setErrorMsg('تەنها دەتوانیت ڕیسێت بۆ ئیمەیڵی فەرمی ئەدمین بکەیت');
-      return;
-    }
-
+  const handleForgotPassword = async () => {
+    const targetEmail = email.trim() || ADMIN_EMAIL;
     setResetLoading(true);
-    setErrorMsg('');
-    setInfoMsg('');
+    setError('');
+    setInfo('');
 
     try {
-      await sendAdminPasswordReset(trimmedEmail);
-      setInfoMsg(`نامەی چاککردنەوەی پاسۆرد بۆ ${trimmedEmail} نێردرا! تکایە سەیری Inbox یان Spam بکە.`);
-    } catch (err: unknown) {
-      const cd = (err && typeof err === 'object' && 'code' in err ? String(err.code) : '') || '';
-      if (cd === 'auth/user-not-found') {
-        setErrorMsg(`ئەم ئیمەیڵە لە فایربەیس نەدۆزرایەوە (${trimmedEmail}).`);
-      } else {
-        setErrorMsg(`نەتوانرا ئیمەیڵی ڕیسێت بنێردرێت: ${cd || err}`);
-      }
+      await sendAdminPasswordReset(targetEmail);
+      setInfo(lang === 'en' ? `Password reset link sent to ${targetEmail}` : lang === 'ar' ? `تم إرسال رابط إعادة التعيين إلى ${targetEmail}` : `لینکی ڕیسێتکردنی وشەی تێپەڕ نێردرا بۆ ${targetEmail}`);
+    } catch {
+      setError(lang === 'en' ? 'Could not send reset link' : lang === 'ar' ? 'تعذر إرسال الرابط، تحقق من البريد' : 'نەتوانرا لینکی ڕیسێت بنێردرێت');
     } finally {
       setResetLoading(false);
     }
@@ -199,162 +168,282 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   return (
     <div
-      className="ov on"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'rgba(3, 6, 14, 0.82)',
+        backdropFilter: 'blur(12px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        animation: 'fadeIn 0.25s ease-out',
       }}
     >
-      <form
-        className="box glass"
-        id="lf"
-        onSubmit={handleSubmit}
-        autoComplete="off"
+      <div
         onClick={(e) => e.stopPropagation()}
-        style={{ width: 'min(480px, 100%)' }}
+        className="glass"
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          padding: '32px 28px',
+          borderRadius: '24px',
+          position: 'relative',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+          border: '1px solid var(--line2)',
+        }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-          <KeyRound size={22} style={{ color: 'var(--ice)' }} />
-          <h3 style={{ margin: 0 }}>چوونەژوورەوەی ئەدمین</h3>
-        </div>
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '18px',
+            left: lang === 'en' ? 'auto' : '18px',
+            right: lang === 'en' ? '18px' : 'auto',
+            background: 'rgba(255, 255, 255, 0.08)',
+            color: 'var(--muted)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '34px',
+            height: '34px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          title="داخستن"
+        >
+          <X size={17} />
+        </button>
 
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ fontSize: '0.85rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
-            ئیمەیڵ
-          </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="email"
-              placeholder="ئیمەیڵ"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLocked || loading}
-              style={{
-                direction: 'ltr',
-                fontSize: '0.9rem',
-                margin: '0',
-                paddingRight: '36px',
-              }}
-            />
-            <Mail
-              size={16}
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--muted)',
-                pointerEvents: 'none',
-              }}
-            />
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '14px' }}>
-          <label style={{ fontSize: '0.85rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
-            پاسۆرد
-          </label>
-          <input
-            ref={inputRef}
-            id="pw"
-            type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={isLocked || loading}
-            style={{ margin: '0', fontSize: '0.9rem' }}
-          />
-        </div>
-
-        {errorMsg && (
+        {/* Modal Header */}
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
           <div
-            className="err"
             style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, var(--ice), var(--vio))',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#05080f',
+              marginBottom: '12px',
+              boxShadow: '0 8px 24px rgba(94, 200, 255, 0.25)',
+            }}
+          >
+            <ShieldCheck size={28} />
+          </div>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 6px', color: 'var(--text)' }}>
+            {t.admin_modal_title}
+          </h2>
+          <p style={{ color: 'var(--muted)', fontSize: '0.84rem', margin: 0 }}>
+            {t.admin_modal_subtitle} - {siteName}
+          </p>
+        </div>
+
+        {/* Lockout Banner */}
+        {isLocked && (
+          <div
+            style={{
+              background: 'rgba(255, 123, 138, 0.12)',
+              border: '1px solid rgba(255, 123, 138, 0.3)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              marginBottom: '18px',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.84rem',
+              gap: '10px',
               color: '#ff7b8a',
-              marginBottom: '10px',
-              lineHeight: 1.5,
+              fontSize: '0.86rem',
             }}
           >
-            <AlertTriangle size={16} style={{ flexShrink: 0 }} />
-            <span>{errorMsg}</span>
+            <Lock size={18} />
+            <div>
+              <div style={{ fontWeight: 700 }}>سیستەم قفڵ کراوە!</div>
+              <div style={{ fontSize: '0.78rem' }}>
+                تکایە {lockSeconds} چرکە چاوەڕێ بکە پێش هەوڵدانەوە.
+              </div>
+            </div>
           </div>
         )}
 
-        {infoMsg && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '6px',
-              fontSize: '0.84rem',
-              color: 'var(--s)',
-              marginBottom: '12px',
-              background: 'rgba(158, 230, 181, 0.1)',
-              padding: '10px',
-              borderRadius: '8px',
-              border: '1px solid rgba(158, 230, 181, 0.25)',
-              lineHeight: 1.5,
-            }}
-          >
-            <CheckCircle2 size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <span>{infoMsg}</span>
+        <form onSubmit={handleLogin}>
+          {/* Email input */}
+          <div style={{ marginBottom: '14px' }}>
+            <label style={{ fontSize: '0.82rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
+              {t.admin_email_label}
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="kooora.taqana@gmail.com"
+                dir="ltr"
+                disabled={isLocked || loading}
+                style={{
+                  width: '100%',
+                  padding: '11px 14px 11px 38px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--line2)',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: 'var(--text)',
+                  fontFamily: 'inherit',
+                  fontSize: '0.92rem',
+                  outline: 'none',
+                }}
+              />
+              <Mail
+                size={16}
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--muted)',
+                }}
+              />
+            </div>
           </div>
-        )}
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: failedCount >= 3 ? '12px' : '0' }}>
-          <button
-            className="btn pri"
-            id="lb"
-            type="submit"
-            style={{ flex: 1 }}
-            disabled={isLocked || loading}
-          >
-            {loading ? 'چاوەڕوان بە...' : 'چوونەژوورەوە'}
-          </button>
-          <button className="btn" type="button" onClick={onClose}>
-            داخستن
-          </button>
-        </div>
+          {/* Password / PIN input */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ fontSize: '0.82rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
+              {t.admin_pw_label}
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                dir="ltr"
+                disabled={isLocked || loading}
+                style={{
+                  width: '100%',
+                  padding: '11px 14px 11px 38px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--line2)',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: 'var(--text)',
+                  fontFamily: 'inherit',
+                  fontSize: '0.92rem',
+                  outline: 'none',
+                }}
+              />
+              <KeyRound
+                size={16}
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--muted)',
+                }}
+              />
+            </div>
+          </div>
 
-        {/* Password Reset Section (Activated when failed >= 3 or requested) */}
-        {failedCount >= 3 && (
-          <div
-            style={{
-              marginTop: '12px',
-              paddingTop: '12px',
-              borderTop: '1px solid var(--line)',
-              textAlign: 'center',
-            }}
-          >
-            <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '8px' }}>
-              پاسۆردەکەت لەبیرچووە؟ دەتوانیت نامەی ڕیسێت بۆ ئیمەیڵەکەت بنێریت:
-            </p>
-            <button
-              type="button"
-              className="btn"
-              onClick={handlePasswordReset}
-              disabled={resetLoading}
+          {/* Error Message */}
+          {error && (
+            <div
               style={{
-                width: '100%',
-                fontSize: '0.85rem',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
                 gap: '8px',
-                borderColor: 'var(--ice)',
-                color: 'var(--ice)',
+                color: '#ff7b8a',
+                fontSize: '0.84rem',
+                marginBottom: '14px',
+                background: 'rgba(255, 123, 138, 0.1)',
+                padding: '8px 12px',
+                borderRadius: '8px',
               }}
             >
-              <RefreshCw size={15} className={resetLoading ? 'spin' : ''} />
-              {resetLoading ? 'لە ناردندایە...' : 'ڕیسێت پاسۆرد بکە (ناردن بۆ ئیمەیڵ)'}
-            </button>
-          </div>
-        )}
-      </form>
+              <AlertCircle size={15} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Info Message */}
+          {info && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: 'var(--s)',
+                fontSize: '0.84rem',
+                marginBottom: '14px',
+                background: 'rgba(158, 230, 181, 0.1)',
+                padding: '8px 12px',
+                borderRadius: '8px',
+              }}
+            >
+              <CheckCircle size={15} />
+              <span>{info}</span>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLocked || loading}
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '12px',
+              background: isLocked ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, var(--ice), var(--vio))',
+              color: isLocked ? 'var(--muted)' : '#05080f',
+              border: 'none',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              cursor: isLocked ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s',
+              boxShadow: isLocked ? 'none' : '0 6px 20px rgba(94, 200, 255, 0.2)',
+            }}
+          >
+            {loading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                <span>چاوەڕێ بکە...</span>
+              </>
+            ) : (
+              <span>{t.admin_btn_login}</span>
+            )}
+          </button>
+        </form>
+
+        {/* Forgot password */}
+        <div style={{ marginTop: '16px', textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={resetLoading || isLocked}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--muted)',
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              fontFamily: 'inherit',
+            }}
+          >
+            {resetLoading ? 'ناردنی لینک...' : t.admin_forgot_pw}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -70,90 +70,144 @@ export function getDirectDriveImageUrl(url: string): string {
   return url;
 }
 
+export async function compressImage(
+  file: File,
+  maxWidth = 1200,
+  quality = 0.82
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function uploadToGoogleDrive(
   file: File,
   onProgress?: (pct: number) => void
-): Promise<{ url: string; fileId?: string }> {
-  if (onProgress) onProgress(20);
+): Promise<{ url: string; fileId?: string; backupUrl?: string }> {
+  if (onProgress) onProgress(15);
 
-  const base64 = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const res = reader.result as string;
-      const cleanBase64 = res.includes(',') ? res.split(',')[1] : res;
-      resolve(cleanBase64);
-    };
-    reader.onerror = () => reject(new Error('نەتوانرا فایلەکە بخوێندرێتەوە'));
-    reader.readAsDataURL(file);
-  });
+  // Images are stored inside the database itself (compressed). This always works for every
+  // visitor, unlike Drive links that need public sharing and are often blocked as hotlinks.
+  if (file.type.startsWith('image/')) {
+    let inline: string | null = null;
+    const steps: Array<[number, number]> = [[1280, 0.8], [1100, 0.72], [900, 0.65], [720, 0.55], [560, 0.5]];
+    for (const [w, q] of steps) {
+      try {
+        inline = await compressImage(file, w, q);
+      } catch (err) {
+        console.debug('Compression notice:', err);
+      }
+      if (inline && inline.length <= 640000) break;
+    }
+    if (inline && inline.startsWith('data:image/jpeg') && inline.length <= 900000) {
+      if (onProgress) onProgress(100);
+      return { url: inline };
+    }
+    if (onProgress) onProgress(100);
+    throw new Error('وێنەکەت زۆر گەورەیە یان جۆرەکەی پشتگیری ناکرێت، تکایە وێنەیەکی تر (JPG یان PNG) هەڵبژێرە');
+  }
 
-  if (onProgress) onProgress(50);
-
-  const safeName = file.name.replace(/[^\w.-]/g, '_');
-  const payload = {
-    file: base64,
-    base64: base64,
-    name: safeName,
-    filename: safeName,
-    type: file.type || 'application/octet-stream',
-    mimeType: file.type || 'application/octet-stream',
-  };
-
-  if (onProgress) onProgress(75);
-
+  // Other files (video): Google Drive Apps Script
   try {
-    const res = await fetch(GOOGLE_DRIVE_WEBAPP_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-      },
-      body: JSON.stringify(payload),
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const res = reader.result as string;
+        resolve(res.includes(',') ? res.split(',')[1] : res);
+      };
+      reader.onerror = () => reject(new Error('نەتوانرا فایلەکە بخوێندرێتەوە'));
+      reader.readAsDataURL(file);
     });
 
-    if (onProgress) onProgress(90);
+    if (onProgress) onProgress(50);
+
+    const safeName = file.name.replace(/[^\w.-]/g, '_');
+    const payload = {
+      file: base64,
+      base64: base64,
+      name: safeName,
+      filename: safeName,
+      type: file.type || 'application/octet-stream',
+      mimeType: file.type || 'application/octet-stream',
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
+    if (onProgress) onProgress(70);
+
+    const res = await fetch(GOOGLE_DRIVE_WEBAPP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+
+    if (onProgress) onProgress(88);
 
     const text = await res.text();
     let data: Record<string, unknown> = {};
     try {
       data = JSON.parse(text);
     } catch {
-      if (text.startsWith('http')) {
-        data = { url: text.trim() };
-      }
-    }
-
-    if (data.error) {
-      throw new Error(String(data.error));
+      if (text.startsWith('http')) data = { url: text.trim() };
     }
 
     const fileId = (data.fileId || data.id || data.file_id || '') as string;
-    let url = (data.url || data.fileUrl || data.downloadUrl || data.viewUrl || '') as string;
+    let driveUrl = (data.url || data.fileUrl || data.downloadUrl || data.viewUrl || '') as string;
+    if (!driveUrl && fileId) driveUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
 
-    if (!url && fileId) {
-      url = `https://drive.google.com/uc?export=view&id=${fileId}`;
+    if (driveUrl) {
+      if (onProgress) onProgress(100);
+      return { url: driveUrl, fileId: fileId || undefined };
     }
-
-    if (!url && text.includes('drive.google.com')) {
-      const match = text.match(/https:\/\/[^\s"']+/);
-      if (match) url = match[0];
-    }
-
-    if (!url) {
-      if (text.includes('You need permission') || text.includes('accounts.google.com')) {
-        throw new Error('ڕێگەپێدانی گووگڵ درایڤ پێنەدراوە. تکایە لە پڕۆژەی Google Apps Script بەشی (Who has access) بکە بە (Anyone).');
-      }
-      throw new Error('نەتوانرا لینکی درایڤ لە سێرڤەرەکە وەربگیرێت.');
-    }
-
-    if (onProgress) onProgress(100);
-    return { url, fileId: fileId || undefined };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('CORS')) {
-      throw new Error('نەتوانرا پەیوەندی بە گووگڵ درایڤ بکرێت. تکایە دڵنیابە لە Google Apps Script کە بەشی (Who has access) کراوە بە (Anyone).');
-    }
-    throw new Error(msg);
+  } catch (driveErr) {
+    console.warn('Google Drive Apps Script upload warning:', driveErr);
   }
+
+  if (onProgress) onProgress(100);
+  throw new Error('نەتوانرا فایلەکە باربکرێت بۆ گووگڵ درایڤ. تکایە دووبارە هەوڵبدەرەوە.');
 }
 
 let app: FirebaseApp | null = null;
@@ -199,6 +253,7 @@ export interface Post {
   category?: 'general' | 'programming' | 'posts' | 'electronics';
   text?: string;
   url?: string;
+  backupUrl?: string;
   path?: string;
   t?: Timestamp | { toDate?: () => Date } | null;
 }
@@ -213,8 +268,93 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   subtitle: 'پلاتفۆرمی فەرمی ئەیوبی بۆ بازرگانی، دروستکردنی وێبسایت و ئەپ، دیزاینی وێنە و ڤیدیۆ، و سیستمە دەستکردەکان.',
 };
 
+export const safeStorage = {
+  get: (key: string): string | null => {
+    try {
+      return typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem(key) : null;
+    } catch {
+      return null;
+    }
+  },
+  set: (key: string, value: string): void => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(key, value);
+      }
+    } catch {}
+  },
+  remove: (key: string): void => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(key);
+      }
+    } catch {}
+  },
+  getSession: (key: string): string | null => {
+    try {
+      return typeof window !== 'undefined' && window.sessionStorage ? window.sessionStorage.getItem(key) : null;
+    } catch {
+      return null;
+    }
+  },
+  setSession: (key: string, value: string): void => {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem(key, value);
+      }
+    } catch {}
+  },
+  removeSession: (key: string): void => {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.removeItem(key);
+      }
+    } catch {}
+  },
+};
+
+export function formatPostDate(t: unknown): string {
+  if (!t) return '';
+  try {
+    let date: Date | null = null;
+    if (typeof t === 'object' && t !== null) {
+      if ('toDate' in t && typeof (t as { toDate?: () => Date }).toDate === 'function') {
+        date = (t as { toDate: () => Date }).toDate();
+      } else if ('seconds' in t && typeof (t as { seconds?: number }).seconds === 'number') {
+        date = new Date((t as { seconds: number }).seconds * 1000);
+      }
+    } else if (typeof t === 'number') {
+      date = new Date(t);
+    } else if (typeof t === 'string') {
+      date = new Date(t);
+    }
+
+    if (!date || isNaN(date.getTime())) return '';
+
+    try {
+      return date.toLocaleDateString('ckb-IQ', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      try {
+        return date.toLocaleDateString('ar-IQ', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+      } catch {
+        return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+      }
+    }
+  } catch {
+    return '';
+  }
+}
+
 export function subscribeSiteSettings(onUpdate: (settings: SiteSettings) => void): () => void {
-  const localSaved = localStorage.getItem('ayoubi_site_settings');
+  const localSaved = safeStorage.get('ayoubi_site_settings');
   if (localSaved) {
     try {
       onUpdate(JSON.parse(localSaved));
@@ -230,7 +370,7 @@ export function subscribeSiteSettings(onUpdate: (settings: SiteSettings) => void
     (snap) => {
       if (snap.exists()) {
         const data = snap.data() as SiteSettings;
-        localStorage.setItem('ayoubi_site_settings', JSON.stringify(data));
+        safeStorage.set('ayoubi_site_settings', JSON.stringify(data));
         onUpdate(data);
       }
     },
@@ -239,7 +379,7 @@ export function subscribeSiteSettings(onUpdate: (settings: SiteSettings) => void
 }
 
 export async function updateSiteSettings(settings: SiteSettings): Promise<void> {
-  localStorage.setItem('ayoubi_site_settings', JSON.stringify(settings));
+  safeStorage.set('ayoubi_site_settings', JSON.stringify(settings));
   if (!db) return;
   try {
     const b = writeBatch(db);
@@ -255,9 +395,9 @@ export async function trackVisitor(): Promise<void> {
   if (!auth || !db) return;
   try {
     const day = new Date().toLocaleDateString('en-CA');
-    const n = !localStorage.getItem('v');
-    const d = localStorage.getItem('d') !== day;
-    const o = !sessionStorage.getItem('o');
+    const n = !safeStorage.get('v');
+    const d = safeStorage.get('d') !== day;
+    const o = !safeStorage.getSession('o');
 
     if (!n && !d && !o) return;
 
@@ -281,9 +421,9 @@ export async function trackVisitor(): Promise<void> {
     );
     await b.commit();
 
-    localStorage.setItem('v', '1');
-    localStorage.setItem('d', day);
-    sessionStorage.setItem('o', '1');
+    safeStorage.set('v', '1');
+    safeStorage.set('d', day);
+    safeStorage.setSession('o', '1');
   } catch (err) {
     console.debug('Visitor count skipped or restricted:', err);
   }
@@ -356,24 +496,32 @@ export async function sendAdminPasswordReset(email: string): Promise<void> {
   await sendPasswordResetEmail(auth, email);
 }
 
-// Create new post with optional file, title, and category
+// Create new post with optional file, title, category, and directUrl
 export async function createPost(
   type: 'text' | 'image' | 'video' | 'code',
   text: string,
   title: string = '',
   category: 'general' | 'programming' | 'posts' | 'electronics' = 'general',
   file?: File | null,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  directUrl?: string,
+  preloadedData?: { url: string; fileId?: string; backupUrl?: string } | null
 ): Promise<void> {
   if (!db) throw new Error('Database not initialized');
 
-  let downloadUrl: string | undefined;
+  let downloadUrl: string | undefined = directUrl?.trim();
   let filePath: string | undefined;
+  let backupUrl: string | undefined;
 
-  if (file && (type === 'image' || type === 'video')) {
+  if (preloadedData && preloadedData.url) {
+    downloadUrl = preloadedData.url;
+    filePath = preloadedData.fileId;
+    backupUrl = preloadedData.backupUrl;
+  } else if (file && (type === 'image' || type === 'video')) {
     const uploadRes = await uploadToGoogleDrive(file, onProgress);
     downloadUrl = uploadRes.url;
     filePath = uploadRes.fileId;
+    backupUrl = uploadRes.backupUrl;
   }
 
   const docData: Record<string, unknown> = {
@@ -386,6 +534,7 @@ export async function createPost(
 
   if (downloadUrl) docData.url = downloadUrl;
   if (filePath) docData.path = filePath;
+  if (backupUrl) docData.backupUrl = backupUrl;
 
   await addDoc(collection(db, 'posts'), docData);
 }
