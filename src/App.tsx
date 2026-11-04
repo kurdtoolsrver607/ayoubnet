@@ -7,6 +7,7 @@ import {
   subscribeSiteSettings,
   updateSiteSettings,
   onAuthStateChanged,
+  getPostById,
   type VisitorStats,
   type DayStats,
   type Post,
@@ -26,6 +27,7 @@ import { SectionPage } from './components/SectionPage';
 import { AdminPage } from './components/AdminPage';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AmbientEffects } from './components/AmbientEffects';
+import { Sparkles, X } from 'lucide-react';
 import { type Language } from './i18n';
 
 export const App: React.FC = () => {
@@ -41,6 +43,7 @@ export const App: React.FC = () => {
   const [activeSection, setActiveSection] = useState<NavSection>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+  const [directPost, setDirectPost] = useState<Post | null>(null);
 
   // Sync document language and direction
   useEffect(() => {
@@ -93,7 +96,46 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Deep link handler for direct shared post links (?post=ID)
+  // Deep link handler for direct shared post links (?post=ID or #post-ID)
+  // 1. Immediately fetches the exact post from Firestore on mount so visitor never waits
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const targetPostId = params.get('post') || window.location.hash.replace(/^#post-/, '');
+      if (!targetPostId) return;
+
+      getPostById(targetPostId).then((fetchedPost) => {
+        if (fetchedPost) {
+          setDirectPost(fetchedPost);
+
+          if (fetchedPost.category === 'programming') {
+            setActiveSection('programming');
+          } else if (fetchedPost.category === 'posts') {
+            setActiveSection('posts');
+          } else if (fetchedPost.category === 'electronics') {
+            setActiveSection('electronics');
+          } else {
+            setActiveSection('home');
+          }
+
+          setTimeout(() => {
+            const el = document.getElementById(`post-${fetchedPost.id}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.classList.add('post-highlight');
+              setTimeout(() => el.classList.remove('post-highlight'), 4000);
+            }
+          }, 450);
+        }
+      });
+    } catch (err) {
+      console.debug('Direct post fetch error:', err);
+    }
+  }, []);
+
+  // 2. Also watch posts when they arrive from Firestore listener
   useEffect(() => {
     if (typeof window === 'undefined' || posts.length === 0) return;
 
@@ -104,6 +146,7 @@ export const App: React.FC = () => {
 
       const targetPost = posts.find((p) => p.id === targetPostId);
       if (targetPost) {
+        setDirectPost(targetPost);
         if (targetPost.category === 'programming') {
           setActiveSection('programming');
         } else if (targetPost.category === 'posts') {
@@ -131,6 +174,13 @@ export const App: React.FC = () => {
       console.debug('Deep link handling note:', err);
     }
   }, [posts]);
+
+  // Ensure any directly linked post is included in the list even if older than limit(50)
+  const displayedPosts = React.useMemo(() => {
+    if (!directPost) return posts;
+    if (posts.some((p) => p.id === directPost.id)) return posts;
+    return [directPost, ...posts];
+  }, [posts, directPost]);
 
   // Secret trigger when user clicks on year 2026 in the footer
   const handleOpenAdmin = () => {
@@ -166,18 +216,72 @@ export const App: React.FC = () => {
         onLanguageChange={handleLanguageChange}
       />
 
+      {directPost && (
+        <div
+          style={{
+            maxWidth: '720px',
+            margin: '12px auto 0',
+            padding: '10px 18px',
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, rgba(94, 200, 255, 0.18), rgba(123, 109, 255, 0.18))',
+            border: '1px solid var(--ice)',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', color: 'var(--text)' }}>
+            <Sparkles size={16} style={{ color: 'var(--ice)', flexShrink: 0 }} />
+            <span>
+              {lang === 'en'
+                ? `Direct post link: "${directPost.title || 'Selected Post'}"`
+                : lang === 'ar'
+                ? `تم فتح المنشور: "${directPost.title || 'منشور'}"`
+                : `پۆستی دیاریکراو کرایەوە: "${directPost.title || 'پۆست'}"`}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setDirectPost(null);
+              if (window.history && window.history.replaceState) {
+                window.history.replaceState({}, '', window.location.pathname);
+              }
+            }}
+            title="داخستن"
+            style={{
+              background: 'rgba(255, 255, 255, 0.12)',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              color: 'var(--text)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '0.78rem',
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {activeSection === 'home' ? (
         <main className="wrap">
           <Hero siteName={siteSettings.name} subtitle={siteSettings.subtitle} lang={lang} />
           <Services lang={lang} />
           <About lang={lang} />
-          <Posts posts={posts} lang={lang} />
+          <Posts posts={displayedPosts} lang={lang} />
           <Contact lang={lang} />
         </main>
       ) : activeSection === 'admin' ? (
         <AdminPage
           stats={stats}
-          posts={posts}
+          posts={displayedPosts}
           siteSettings={siteSettings}
           onSaveSettings={handleSaveSettings}
           onBackToHome={() => {
@@ -188,7 +292,7 @@ export const App: React.FC = () => {
       ) : (
         <SectionPage
           section={activeSection}
-          posts={posts}
+          posts={displayedPosts}
           onBackToHome={() => {
             setActiveSection('home');
             window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -5,6 +5,7 @@ import {
   formatPostDateTime,
   togglePostLike,
   recordPostView,
+  getPostShareUrl,
   safeStorage,
 } from '../firebase';
 import { DriveImage } from './DriveImage';
@@ -74,9 +75,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
   };
 
   const handleShare = async () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-    const shareUrl = `${origin}${pathname}?post=${post.id}`;
+    const shareUrl = getPostShareUrl(post.id);
 
     let sharedViaNavigator = false;
     if (typeof navigator !== 'undefined' && navigator.share) {

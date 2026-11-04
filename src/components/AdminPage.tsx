@@ -11,6 +11,7 @@ import {
   safeStorage,
   formatPostDate,
   formatPostDateTime,
+  getPostShareUrl,
   type VisitorStats,
   type DayStats,
   type Post,
@@ -1211,9 +1212,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               const isLinkCopied = copiedPostId === post.id;
 
               const handleCopyPostLink = () => {
-                const origin = typeof window !== 'undefined' ? window.location.origin : '';
-                const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-                const url = `${origin}${pathname}?post=${post.id}`;
+                const url = getPostShareUrl(post.id);
                 if (navigator.clipboard) {
                   navigator.clipboard.writeText(url);
                   setCopiedPostId(post.id);

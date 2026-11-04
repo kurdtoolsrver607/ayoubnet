@@ -19,6 +19,7 @@ import {
   addDoc,
   deleteDoc,
   updateDoc,
+  getDoc,
   query,
   orderBy,
   limit,
@@ -468,6 +469,39 @@ export async function recordPostView(postId: string): Promise<void> {
   } catch (err) {
     console.debug('recordPostView note:', err);
   }
+}
+
+export const PUBLIC_SITE_DOMAIN = 'https://ayoubi.site';
+
+export function getPostShareUrl(postId: string): string {
+  if (!postId) return PUBLIC_SITE_DOMAIN;
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'ayoubi.site' || host.endsWith('ayoubi.site')) {
+      const port = window.location.port ? `:${window.location.port}` : '';
+      return `${window.location.protocol}//${host}${port}/?post=${encodeURIComponent(postId)}`;
+    }
+  }
+
+  // Default to public domain so anyone clicking on the link directly opens ayoubi.site without Google login
+  return `${PUBLIC_SITE_DOMAIN}/?post=${encodeURIComponent(postId)}`;
+}
+
+export async function getPostById(postId: string): Promise<Post | null> {
+  if (!db || !postId) return null;
+  try {
+    const snap = await getDoc(doc(db, 'posts', postId));
+    if (snap.exists()) {
+      return {
+        id: snap.id,
+        ...(snap.data() as Omit<Post, 'id'>),
+      };
+    }
+  } catch (err) {
+    console.debug('getPostById note:', err);
+  }
+  return null;
 }
 
 export function subscribeSiteSettings(onUpdate: (settings: SiteSettings) => void): () => void {
