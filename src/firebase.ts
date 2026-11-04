@@ -262,6 +262,31 @@ export interface Post {
   t?: Timestamp | { toDate?: () => Date } | null;
 }
 
+export interface StoreItem {
+  id: string;
+  kind: 'product' | 'app'; // product (Amazon-style goods) or app (PlayStore-style app)
+  title: string;
+  category: string;
+  description: string;
+  priceType: 'free' | 'paid';
+  price: number; // selling price
+  costPrice: number; // cost to owner (لەسەر خۆت بەچەندە)
+  currency: 'IQD' | 'USD';
+  // App specific
+  downloadUrl?: string;
+  appVersion?: string;
+  appPlatform?: 'android' | 'windows' | 'ios' | 'web' | 'all';
+  appSize?: string;
+  // Media
+  imageUrl?: string;
+  backupUrl?: string;
+  // Metrics
+  views?: number;
+  orders?: number;
+  downloads?: number;
+  t?: Timestamp | { toDate?: () => Date } | null;
+}
+
 export interface SiteSettings {
   name: string;
   subtitle: string;
@@ -751,6 +776,125 @@ export async function deletePost(post: Post): Promise<void> {
   }
 
   await deleteDoc(doc(db, 'posts', post.id));
+}
+
+// ----------------- STORE SERVICES -----------------
+
+// Subscribe to store items
+export function subscribeStoreItems(onUpdate: (items: StoreItem[]) => void): () => void {
+  if (!db) {
+    onUpdate([]);
+    return () => {};
+  }
+  const storeCol = collection(db, 'store');
+  const q = query(storeCol, orderBy('t', 'desc'), limit(100));
+
+  let fallbackUnsub: (() => void) | null = null;
+  const unsub = onSnapshot(
+    q,
+    (snapshot) => {
+      const list: StoreItem[] = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<StoreItem, 'id'>),
+      }));
+      onUpdate(list);
+    },
+    (err) => {
+      console.warn('Store primary query notice, using fallback:', err);
+      fallbackUnsub = onSnapshot(
+        query(storeCol, limit(100)),
+        (fallbackSnap) => {
+          const list: StoreItem[] = fallbackSnap.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as Omit<StoreItem, 'id'>),
+          }));
+          onUpdate(list);
+        },
+        () => onUpdate([])
+      );
+    }
+  );
+
+  return () => {
+    unsub();
+    if (fallbackUnsub) fallbackUnsub();
+  };
+}
+
+// Create store item
+export async function createStoreItem(data: Omit<StoreItem, 'id' | 't'>): Promise<string> {
+  if (!db) throw new Error('Database not initialized');
+  if (auth) {
+    if (auth.authStateReady) await auth.authStateReady();
+    if (!auth.currentUser) {
+      try {
+        await signInAnonymously(auth);
+      } catch (err) {
+        console.debug('Anon auth note during store item creation:', err);
+      }
+    }
+  }
+
+  const docRef = await addDoc(collection(db, 'store'), {
+    ...data,
+    views: 0,
+    downloads: 0,
+    orders: 0,
+    t: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+// Delete store item
+export async function deleteStoreItem(itemId: string): Promise<void> {
+  if (!db) throw new Error('Database not initialized');
+  if (auth) {
+    if (auth.authStateReady) await auth.authStateReady();
+    if (!auth.currentUser) {
+      try {
+        await signInAnonymously(auth);
+      } catch (err) {
+        console.debug('Anon auth note during store item delete:', err);
+      }
+    }
+  }
+  await deleteDoc(doc(db, 'store', itemId));
+}
+
+// Record store item view (unique per device)
+export async function recordStoreItemView(itemId: string): Promise<void> {
+  if (!db || !itemId) return;
+  const key = `store_viewed_${itemId}`;
+  if (safeStorage.get(key) === '1') return;
+  safeStorage.set(key, '1');
+
+  try {
+    if (auth && !auth.currentUser) {
+      if (auth.authStateReady) await auth.authStateReady();
+      if (!auth.currentUser) await signInAnonymously(auth);
+    }
+    await updateDoc(doc(db, 'store', itemId), {
+      views: increment(1),
+    });
+  } catch (err) {
+    console.debug('recordStoreItemView error:', err);
+  }
+}
+
+// Record store item action (order or download)
+export async function recordStoreItemAction(itemId: string, action: 'order' | 'download'): Promise<void> {
+  if (!db || !itemId) return;
+  try {
+    if (auth && !auth.currentUser) {
+      if (auth.authStateReady) await auth.authStateReady();
+      if (!auth.currentUser) await signInAnonymously(auth);
+    }
+    await updateDoc(doc(db, 'store', itemId), {
+      [action === 'order' ? 'orders' : 'downloads']: increment(1),
+    });
+  } catch (err) {
+    console.debug('recordStoreItemAction error:', err);
+  }
 }
 
 // Auth helpers

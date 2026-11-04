@@ -20,14 +20,18 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  CheckCircle2,
+  MessageCircle,
+  Maximize2,
 } from 'lucide-react';
 
 interface PostCardProps {
   post: Post;
   lang?: Language;
+  onOpenModal?: (post: Post) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku', onOpenModal }) => {
   const t = translations[lang] || translations.ku;
   const dt = formatPostDateTime(post.t, lang);
 
@@ -86,9 +90,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
           url: shareUrl,
         });
         sharedViaNavigator = true;
-      } catch (err) {
-        // User cancelled or share dismissed
-      }
+      } catch {}
     }
 
     if (!sharedViaNavigator && typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -97,7 +99,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
         setCopiedLink(true);
         setTimeout(() => setCopiedLink(false), 2600);
       } catch {
-        // Fallback prompt if clipboard fails
         try {
           window.prompt(t.post_share_copied, shareUrl);
         } catch {}
@@ -119,95 +120,161 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
   const lineCount = (post.text || '').split('\n').length;
   const isLongCode = lineCount > 8;
 
+  const shareUrl = getPostShareUrl(post.id);
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`سەیری ئەم پۆستەی ئەیوبی بکە:\n${post.title || ''}\n${shareUrl}`)}`;
+
   return (
     <article
       id={`post-${post.id}`}
       className="post glass rv in"
       style={{
-        padding: '24px',
-        borderRadius: '18px',
+        padding: '20px 24px',
+        borderRadius: '20px',
         border: '1px solid var(--line)',
         marginBottom: '20px',
         transition: 'all 0.3s ease',
         position: 'relative',
+        background: 'rgba(255, 255, 255, 0.035)',
       }}
     >
-      {/* Post Header: Title + Category badge + Exact Date and Time */}
+      {/* Social Media Author Header */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           flexWrap: 'wrap',
           gap: '12px',
           marginBottom: '14px',
+          paddingBottom: '12px',
+          borderBottom: '1px solid var(--line)',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {post.category && post.category !== 'general' && (
-            <span
-              style={{
-                alignSelf: 'flex-start',
-                fontSize: '0.72rem',
-                padding: '2px 8px',
-                borderRadius: '6px',
-                background: 'rgba(94, 200, 255, 0.12)',
-                color: 'var(--ice)',
-                fontWeight: 600,
-              }}
-            >
-              {post.category === 'programming'
-                ? (lang === 'en' ? 'Programming' : 'بەرنامەسازی')
-                : post.category === 'electronics'
-                ? (lang === 'en' ? 'Electronics' : 'ئەلیکترۆن')
-                : (lang === 'en' ? 'Posts' : 'پۆستەکان')}
-            </span>
-          )}
-
-          <h3
-            style={{
-              fontSize: '1.22rem',
-              fontWeight: 700,
-              margin: 0,
-              color: 'var(--text)',
-              lineHeight: 1.4,
-            }}
-          >
-            {post.title || (post.type === 'code' ? t.code_snippet : '')}
-          </h3>
-        </div>
-
-        {/* Date and Time Badges (both shown clearly) */}
-        {(dt.date || dt.time) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Avatar with gradient glow */}
           <div
             style={{
-              display: 'inline-flex',
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--ice), var(--vio))',
+              display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              padding: '6px 12px',
-              borderRadius: '10px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid var(--line2)',
-              fontSize: '0.78rem',
-              color: 'var(--muted)',
-              flexWrap: 'wrap',
+              justifyContent: 'center',
+              fontWeight: 800,
+              fontSize: '1.1rem',
+              color: '#05080f',
+              boxShadow: '0 0 14px rgba(94, 200, 255, 0.35)',
+              flexShrink: 0,
             }}
           >
-            {dt.date && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                <Calendar size={13} style={{ color: 'var(--ice)' }} />
-                <span>{dt.date}</span>
-              </span>
-            )}
-            {dt.time && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                <Clock size={13} style={{ color: 'var(--vio)' }} />
-                <span>{dt.time}</span>
-              </span>
-            )}
+            A
           </div>
-        )}
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--text)' }}>
+                ئەیوبی | Ayoubi
+              </span>
+              <CheckCircle2 size={15} fill="var(--ice)" color="#0b1020" />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--muted)' }}>
+              <span>@ayoubi</span>
+              {post.category && post.category !== 'general' && (
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(94, 200, 255, 0.1)',
+                    color: 'var(--ice)',
+                    fontWeight: 600,
+                  }}
+                >
+                  #{post.category === 'programming'
+                    ? (lang === 'en' ? 'Programming' : 'بەرنامەسازی')
+                    : post.category === 'electronics'
+                    ? (lang === 'en' ? 'Electronics' : 'ئەلیکترۆن')
+                    : (lang === 'en' ? 'Posts' : 'پۆستەکان')}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Date & Time Badges */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {(dt.date || dt.time) && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid var(--line2)',
+                fontSize: '0.76rem',
+                color: 'var(--muted)',
+                flexWrap: 'wrap',
+              }}
+            >
+              {dt.date && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Calendar size={12} style={{ color: 'var(--ice)' }} />
+                  <span>{dt.date}</span>
+                </span>
+              )}
+              {dt.time && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Clock size={12} style={{ color: 'var(--vio)' }} />
+                  <span>{dt.time}</span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Open full modal button */}
+          {onOpenModal && (
+            <button
+              type="button"
+              onClick={() => onOpenModal(post)}
+              title="کردنەوەی پۆست لە مۆداڵی تایبەت"
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--line2)',
+                borderRadius: '8px',
+                padding: '5px',
+                color: 'var(--muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Maximize2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Post Title */}
+      {post.title && (
+        <h3
+          onClick={() => onOpenModal && onOpenModal(post)}
+          style={{
+            fontSize: '1.18rem',
+            fontWeight: 700,
+            margin: '0 0 10px',
+            color: 'var(--text)',
+            lineHeight: 1.45,
+            cursor: onOpenModal ? 'pointer' : 'default',
+          }}
+        >
+          {post.title}
+        </h3>
+      )}
 
       {/* Post Content */}
       {post.type === 'code' ? (
@@ -263,10 +330,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
           {post.text && (
             <p
               style={{
-                fontSize: '0.95rem',
+                fontSize: '0.94rem',
                 lineHeight: 1.85,
                 color: 'var(--text)',
-                margin: '0 0 10px',
+                margin: '0 0 12px',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
               }}
@@ -276,7 +343,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
           )}
 
           {post.type === 'image' && isHttps && post.url && (
-            <div style={{ marginTop: '12px' }}>
+            <div
+              style={{ marginTop: '12px', borderRadius: '14px', overflow: 'hidden', cursor: onOpenModal ? 'pointer' : 'default' }}
+              onClick={() => onOpenModal && onOpenModal(post)}
+            >
               <DriveImage url={post.url} backupUrl={post.backupUrl} alt={post.title || ''} />
             </div>
           )}
@@ -292,7 +362,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
                       width: '100%',
                       position: 'relative',
                       overflow: 'hidden',
-                      borderRadius: '12px',
+                      borderRadius: '14px',
                       aspectRatio: '16/9',
                       background: 'rgba(0,0,0,0.4)',
                       border: '1px solid var(--line)',
@@ -317,7 +387,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
                     playsInline
                     style={{
                       maxWidth: '100%',
-                      borderRadius: '12px',
+                      borderRadius: '14px',
                       display: 'block',
                       border: '1px solid var(--line)',
                     }}
@@ -329,104 +399,117 @@ export const PostCard: React.FC<PostCardProps> = ({ post, lang = 'ku' }) => {
         </>
       )}
 
-      {/* Post Action Footer: Likes, Views, and Share Button */}
+      {/* Social Media Action Footer */}
       <div
         style={{
-          marginTop: '18px',
-          paddingTop: '14px',
+          marginTop: '16px',
+          paddingTop: '12px',
           borderTop: '1px solid var(--line)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '12px',
+          gap: '10px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {/* Like Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Like */}
           <button
             type="button"
             onClick={handleToggleLike}
             disabled={isLiking}
-            title={isLiked ? t.post_like : t.post_like}
+            title={t.post_like}
             style={{
               background: isLiked ? 'rgba(255, 75, 110, 0.16)' : 'rgba(255, 255, 255, 0.04)',
               border: isLiked ? '1px solid rgba(255, 75, 110, 0.5)' : '1px solid var(--line2)',
               color: isLiked ? '#ff4b6e' : 'var(--muted)',
               borderRadius: '10px',
-              padding: '6px 14px',
+              padding: '6px 12px',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '7px',
-              fontSize: '0.86rem',
+              gap: '6px',
+              fontSize: '0.84rem',
               fontWeight: 600,
               fontFamily: 'inherit',
               transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              transform: isLiked ? 'scale(1.03)' : 'scale(1)',
+              transform: isLiked ? 'scale(1.04)' : 'scale(1)',
             }}
           >
-            <Heart
-              size={17}
-              fill={isLiked ? '#ff4b6e' : 'transparent'}
-              style={{
-                color: isLiked ? '#ff4b6e' : 'currentColor',
-                transition: 'transform 0.2s',
-              }}
-            />
+            <Heart size={16} fill={isLiked ? '#ff4b6e' : 'transparent'} />
             <span style={{ direction: 'ltr', fontVariantNumeric: 'tabular-nums' }}>
               {likeCount}
             </span>
           </button>
 
-          {/* Views Display (Per device tracked) */}
+          {/* Views */}
           <div
             title={`${t.post_views}: ${post.views || 0}`}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.84rem',
+              gap: '5px',
+              fontSize: '0.82rem',
               color: 'var(--muted)',
-              padding: '6px 10px',
-              borderRadius: '8px',
+              padding: '5px 8px',
+              borderRadius: '6px',
               background: 'rgba(255, 255, 255, 0.02)',
             }}
           >
-            <Eye size={16} style={{ color: 'var(--ice)', opacity: 0.85 }} />
+            <Eye size={15} style={{ color: 'var(--ice)', opacity: 0.85 }} />
             <span style={{ direction: 'ltr', fontVariantNumeric: 'tabular-nums' }}>
               {post.views || 0}
             </span>
-            <span style={{ fontSize: '0.76rem', opacity: 0.8 }}>{t.post_views}</span>
           </div>
+
+          {/* WhatsApp Direct Share/Chat */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="شەیرکردن لە واتسئاپ"
+            style={{
+              background: 'rgba(37, 211, 102, 0.08)',
+              border: '1px solid rgba(37, 211, 102, 0.25)',
+              color: '#25D366',
+              borderRadius: '8px',
+              padding: '5px 10px',
+              fontSize: '0.78rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              textDecoration: 'none',
+            }}
+          >
+            <MessageCircle size={14} />
+            <span>واتسئاپ</span>
+          </a>
         </div>
 
         {/* Share Button with feedback */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
-          <button
-            type="button"
-            onClick={handleShare}
-            title={t.post_share}
-            style={{
-              background: copiedLink ? 'rgba(158, 230, 181, 0.18)' : 'rgba(255, 255, 255, 0.05)',
-              border: copiedLink ? '1px solid var(--s)' : '1px solid var(--line2)',
-              color: copiedLink ? 'var(--s)' : 'var(--text)',
-              borderRadius: '10px',
-              padding: '6px 14px',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              fontSize: '0.84rem',
-              fontWeight: 600,
-              fontFamily: 'inherit',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {copiedLink ? <Check size={16} style={{ color: 'var(--s)' }} /> : <Share2 size={16} style={{ color: 'var(--ice)' }} />}
-            <span>{copiedLink ? t.post_share_copied : t.post_share}</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleShare}
+          title={t.post_share}
+          style={{
+            background: copiedLink ? 'rgba(158, 230, 181, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+            border: copiedLink ? '1px solid var(--s)' : '1px solid var(--line2)',
+            color: copiedLink ? 'var(--s)' : 'var(--text)',
+            borderRadius: '10px',
+            padding: '6px 14px',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {copiedLink ? <Check size={15} style={{ color: 'var(--s)' }} /> : <Share2 size={15} style={{ color: 'var(--ice)' }} />}
+          <span>{copiedLink ? t.post_share_copied : t.post_share}</span>
+        </button>
       </div>
     </article>
   );

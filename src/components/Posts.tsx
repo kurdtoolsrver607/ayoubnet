@@ -6,9 +6,10 @@ import { translations, type Language } from '../i18n';
 interface PostsProps {
   posts: Post[];
   lang?: Language;
+  onOpenModal?: (post: Post) => void;
 }
 
-export const Posts: React.FC<PostsProps> = ({ posts, lang = 'ku' }) => {
+export const Posts: React.FC<PostsProps> = ({ posts, lang = 'ku', onOpenModal }) => {
   const t = translations[lang] || translations.ku;
 
   // Only show general / عام home feed posts (strictly separated from other sections)
@@ -28,7 +29,7 @@ export const Posts: React.FC<PostsProps> = ({ posts, lang = 'ku' }) => {
       </div>
       <div id="plist">
         {homePosts.map((post) => (
-          <PostCard key={post.id} post={post} lang={lang} />
+          <PostCard key={post.id} post={post} lang={lang} onOpenModal={onOpenModal} />
         ))}
       </div>
     </section>

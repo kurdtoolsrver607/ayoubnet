@@ -29,6 +29,7 @@ interface SectionPageProps {
   posts: Post[];
   onBackToHome: () => void;
   lang?: Language;
+  onOpenModal?: (post: Post) => void;
 }
 
 type ProgSubTab = 'posts' | 'html' | 'python' | 'encrypt';
@@ -101,6 +102,7 @@ export const SectionPage: React.FC<SectionPageProps> = ({
   posts,
   onBackToHome,
   lang = 'ku',
+  onOpenModal,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [progSubTab, setProgSubTab] = useState<ProgSubTab>('posts');
@@ -364,7 +366,7 @@ export const SectionPage: React.FC<SectionPageProps> = ({
       {(section !== 'programming' || progSubTab === 'posts') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           {filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} lang={lang} />
+            <PostCard key={post.id} post={post} lang={lang} onOpenModal={onOpenModal} />
           ))}
 
           {filteredPosts.length === 0 && (

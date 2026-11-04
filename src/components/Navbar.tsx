@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Code, Cpu, MessageSquare, Home, Sparkles, Globe, ChevronDown } from 'lucide-react';
+import { Sun, Moon, Code, Cpu, MessageSquare, Home, Sparkles, Globe, ChevronDown, ShoppingBag } from 'lucide-react';
 import { safeStorage } from '../firebase';
 import { translations, type Language } from '../i18n';
 
-export type NavSection = 'home' | 'programming' | 'posts' | 'electronics' | 'admin';
+export type NavSection = 'home' | 'programming' | 'posts' | 'electronics' | 'store' | 'admin';
 
 interface NavbarProps {
   siteName: string;
@@ -64,6 +64,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Nav items: NO admin button here - completely hidden from public UI!
   const navItems: { id: NavSection; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: t.nav_home, icon: <Home size={15} /> },
+    { id: 'store', label: t.nav_store, icon: <ShoppingBag size={15} /> },
     { id: 'programming', label: t.nav_programming, icon: <Code size={15} /> },
     { id: 'posts', label: t.nav_posts, icon: <MessageSquare size={15} /> },
     { id: 'electronics', label: t.nav_electronics, icon: <Cpu size={15} /> },

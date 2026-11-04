@@ -6,6 +6,7 @@ export interface Translations {
   nav_programming: string;
   nav_posts: string;
   nav_electronics: string;
+  nav_store: string;
   theme_dark: string;
   theme_light: string;
 
@@ -85,6 +86,21 @@ export interface Translations {
   admin_email_invalid: string;
   admin_pw_wrong: string;
   admin_attempts_left: string;
+
+  // Store
+  store_title: string;
+  store_desc: string;
+  store_tab_all: string;
+  store_tab_products: string;
+  store_tab_apps: string;
+  store_tab_free: string;
+  store_tab_paid: string;
+  store_search_placeholder: string;
+  store_btn_buy: string;
+  store_btn_download: string;
+  store_free_badge: string;
+  store_empty: string;
+  store_order_whatsapp: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -93,6 +109,7 @@ export const translations: Record<Language, Translations> = {
     nav_programming: 'بەرنامەسازی',
     nav_posts: 'پۆستەکان',
     nav_electronics: 'ئەلیکترۆن',
+    nav_store: 'بازاڕ (Store)',
     theme_dark: 'تاریک',
     theme_light: 'ڕووناک',
 
@@ -164,6 +181,20 @@ export const translations: Record<Language, Translations> = {
     admin_email_invalid: 'ئەم ئیمەیڵە ڕێگەپێدراو نییە یان هەڵەیە',
     admin_pw_wrong: 'وشەی نهێنی هەڵەیە',
     admin_attempts_left: 'هەوڵی تر ماوە',
+
+    store_title: 'بازاڕی ئەیوبی (Store)',
+    store_desc: 'فرۆشگای فەرمی بۆ کڕینی کاڵا، ئامێرەکان و داونلۆدکردنی ئەپ و نەرمەکاڵاکان.',
+    store_tab_all: 'هەموو بەرهەمەکان',
+    store_tab_products: '🛍️ کاڵا و ئامێرەکان',
+    store_tab_apps: '📱 ئەپڵیکەیشن و نەرمەکاڵا',
+    store_tab_free: '🎁 بێبەرامبەر (Free)',
+    store_tab_paid: '💎 بەپارە (Paid)',
+    store_search_placeholder: 'گەڕان لەناو بازاڕ بەپێی ناو، مۆدێل یان پلاتفۆرم...',
+    store_btn_buy: 'کڕین و داواکردن',
+    store_btn_download: 'داونلۆدکردنی ئەپ',
+    store_free_badge: 'بێبەرامبەر',
+    store_empty: 'هێشتا هیچ کاڵا یان ئەپێک لەم بەشەدا بەردەست نییە.',
+    store_order_whatsapp: 'داواکردنی ڕاستەوخۆ بە واتسئاپ',
   },
 
   ar: {
@@ -171,6 +202,7 @@ export const translations: Record<Language, Translations> = {
     nav_programming: 'البرمجة',
     nav_posts: 'المنشورات',
     nav_electronics: 'الإلكترونيات',
+    nav_store: 'المتجر (Store)',
     theme_dark: 'داكن',
     theme_light: 'فاتح',
 
@@ -242,6 +274,20 @@ export const translations: Record<Language, Translations> = {
     admin_email_invalid: 'هذا البريد غير مصرح به أو غير صحيح',
     admin_pw_wrong: 'كلمة المرور غير صحيحة',
     admin_attempts_left: 'محاولات متبقية',
+
+    store_title: 'متجر أيوبي (Store)',
+    store_desc: 'المتجر الرسمي لشراء المنتجات، العتاد وتحميل التطبيقات والبرمجيات.',
+    store_tab_all: 'جميع المنتجات',
+    store_tab_products: '🛍️ المنتجات والأجهزة',
+    store_tab_apps: '📱 التطبيقات والبرامج',
+    store_tab_free: '🎁 مجاني (Free)',
+    store_tab_paid: '💎 مدفوع (Paid)',
+    store_search_placeholder: 'البحث في المتجر حسب الاسم، الفئة أو النظام...',
+    store_btn_buy: 'شراء وطلب الآن',
+    store_btn_download: 'تحميل التطبيق',
+    store_free_badge: 'مجاني',
+    store_empty: 'لا توجد منتجات أو تطبيقات متاحة في هذا القسم حالياً.',
+    store_order_whatsapp: 'طلب مباشر عبر واتساب',
   },
 
   en: {
@@ -249,6 +295,7 @@ export const translations: Record<Language, Translations> = {
     nav_programming: 'Programming',
     nav_posts: 'Posts',
     nav_electronics: 'Electronics',
+    nav_store: 'Store',
     theme_dark: 'Dark',
     theme_light: 'Light',
 
@@ -320,5 +367,19 @@ export const translations: Record<Language, Translations> = {
     admin_email_invalid: 'This email is not authorized or incorrect',
     admin_pw_wrong: 'Incorrect password or PIN',
     admin_attempts_left: 'attempts left',
+
+    store_title: 'Ayoubi Store',
+    store_desc: 'Official store for purchasing tech products, hardware, and downloading apps & software.',
+    store_tab_all: 'All Items',
+    store_tab_products: '🛍️ Products & Hardware',
+    store_tab_apps: '📱 Apps & Software',
+    store_tab_free: '🎁 Free',
+    store_tab_paid: '💎 Paid',
+    store_search_placeholder: 'Search store by name, platform or category...',
+    store_btn_buy: 'Buy & Order Now',
+    store_btn_download: 'Download App',
+    store_free_badge: 'Free',
+    store_empty: 'No items or applications found in this section.',
+    store_order_whatsapp: 'Direct WhatsApp Order',
   },
 };
