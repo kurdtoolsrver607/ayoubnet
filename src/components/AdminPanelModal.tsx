@@ -64,6 +64,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'general' | 'programming' | 'posts' | 'electronics'>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteNotice, setDeleteNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Settings form state
@@ -197,13 +199,19 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   };
 
   const handleDelete = async (post: Post) => {
-    if (!window.confirm('ئایا دڵنیایت لە سڕینەوەی ئەم پۆستە؟ ئەم کردارە ناگەڕێتەوە.')) return;
     setDeletingId(post.id);
+    setDeleteNotice(null);
     try {
       await deletePost(post);
-    } catch (err) {
+      setConfirmDeleteId(null);
+      setDeleteNotice({ type: 'success', msg: 'پۆستەکە بە سەرکەوتوویی سڕایەوە ✨' });
+      setTimeout(() => {
+        setDeleteNotice(null);
+      }, 4000);
+    } catch (err: unknown) {
       console.error('Delete error:', err);
-      alert('نەتوانرا پۆستەکە بسڕدرێتەوە');
+      const errMsg = err instanceof Error ? err.message : 'هەڵەیەک ڕوویدا لە کاتی سڕینەوەی پۆستەکە';
+      setDeleteNotice({ type: 'error', msg: `نەتوانرا پۆست بسڕدرێتەوە: ${errMsg}` });
     } finally {
       setDeletingId(null);
     }
@@ -746,6 +754,26 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 </div>
               </div>
 
+              {deleteNotice && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '0.84rem',
+                    color: deleteNotice.type === 'success' ? 'var(--s)' : '#ff7b8a',
+                    marginBottom: '12px',
+                    background: deleteNotice.type === 'success' ? 'rgba(158, 230, 181, 0.1)' : 'rgba(255, 123, 138, 0.1)',
+                    padding: '9px 14px',
+                    borderRadius: '8px',
+                    border: `1px solid ${deleteNotice.type === 'success' ? 'rgba(158, 230, 181, 0.3)' : 'rgba(255, 123, 138, 0.3)'}`,
+                  }}
+                >
+                  {deleteNotice.type === 'success' ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
+                  <span>{deleteNotice.msg}</span>
+                </div>
+              )}
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {filteredPosts.map((p) => {
                   const timeStr = formatTimestamp(p);
@@ -806,23 +834,65 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                           </span>
                         </div>
 
-                        <button
-                          type="button"
-                          className="btn"
-                          onClick={() => handleDelete(p)}
-                          disabled={isDeleting}
-                          style={{
-                            padding: '4px 10px',
-                            fontSize: '0.78rem',
-                            color: '#ff7b8a',
-                            borderColor: 'rgba(255, 123, 138, 0.3)',
-                            gap: '4px',
-                          }}
-                          title="سڕینەوەی ئەم پۆستە"
-                        >
-                          <Trash2 size={13} />
-                          {isDeleting ? 'دەسڕدرێتەوە...' : 'سڕینەوە'}
-                        </button>
+                        {confirmDeleteId === p.id ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '0.78rem', color: '#ff7b8a', fontWeight: 600 }}>دڵنیایت؟</span>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(p)}
+                              disabled={isDeleting}
+                              style={{
+                                background: '#ff4d61',
+                                color: '#fff',
+                                border: 'none',
+                                padding: '4px 10px',
+                                borderRadius: '8px',
+                                fontSize: '0.76rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {isDeleting ? 'دەسڕدرێتەوە...' : 'بەڵێ، بسڕەوە'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteId(null)}
+                              disabled={isDeleting}
+                              style={{
+                                background: 'var(--glass)',
+                                color: 'var(--muted)',
+                                border: '1px solid var(--line2)',
+                                padding: '4px 8px',
+                                borderRadius: '8px',
+                                fontSize: '0.76rem',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              پاشگەزبوونەوە
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => {
+                              setConfirmDeleteId(p.id);
+                              setDeleteNotice(null);
+                            }}
+                            disabled={isDeleting}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '0.78rem',
+                              color: '#ff7b8a',
+                              borderColor: 'rgba(255, 123, 138, 0.3)',
+                              gap: '4px',
+                            }}
+                            title="سڕینەوەی ئەم پۆستە"
+                          >
+                            <Trash2 size={13} />
+                            <span>سڕینەوە</span>
+                          </button>
+                        )}
                       </div>
 
                       {/* Title */}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Post } from '../firebase';
-import { extractDriveFileId, getDirectDriveImageUrl } from '../firebase';
+import { extractDriveFileId } from '../firebase';
+import { DriveImage } from './DriveImage';
 import { Tag } from 'lucide-react';
 
 interface PostsProps {
@@ -84,11 +85,7 @@ export const Posts: React.FC<PostsProps> = ({ posts }) => {
                 <>
                   {post.text && <p style={{ fontSize: '0.92rem', lineHeight: 1.8 }}>{post.text}</p>}
                   {post.type === 'image' && isHttps && post.url && (
-                    <img
-                      src={getDirectDriveImageUrl(post.url)}
-                      alt={post.title || ''}
-                      loading="lazy"
-                    />
+                    <DriveImage url={post.url} alt={post.title || ''} />
                   )}
                   {post.type === 'video' && isHttps && post.url && (
                     (() => {

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Post } from '../firebase';
-import { extractDriveFileId, getDirectDriveImageUrl } from '../firebase';
+import { extractDriveFileId } from '../firebase';
+import { DriveImage } from './DriveImage';
 import type { NavSection } from './Navbar';
 import {
   Search,
@@ -289,19 +290,7 @@ export const SectionPage: React.FC<SectionPageProps> = ({
                   )}
 
                   {post.type === 'image' && isHttps && post.url && (
-                    <div style={{ marginTop: '8px' }}>
-                      <img
-                        src={getDirectDriveImageUrl(post.url)}
-                        alt={post.title || ''}
-                        loading="lazy"
-                        style={{
-                          maxWidth: '100%',
-                          borderRadius: '12px',
-                          display: 'block',
-                          border: '1px solid var(--line)',
-                        }}
-                      />
-                    </div>
+                    <DriveImage url={post.url} alt={post.title || ''} />
                   )}
 
                   {post.type === 'video' && isHttps && post.url && (

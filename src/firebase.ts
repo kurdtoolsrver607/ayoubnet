@@ -65,7 +65,7 @@ export function extractDriveFileId(url?: string): string | null {
 export function getDirectDriveImageUrl(url: string): string {
   const fileId = extractDriveFileId(url);
   if (fileId) {
-    return `https://lh3.googleusercontent.com/d/${fileId}`;
+    return `https://lh3.googleusercontent.com/d/${fileId}=s1200`;
   }
   return url;
 }
@@ -392,7 +392,21 @@ export async function createPost(
 
 // Delete post
 export async function deletePost(post: Post): Promise<void> {
-  if (!db) throw new Error('Database not initialized');
+  if (!db) throw new Error('سیستەمی داتابەیس دەستپێنەکراوە');
+
+  if (auth) {
+    if (auth.authStateReady) {
+      await auth.authStateReady();
+    }
+    if (!auth.currentUser) {
+      try {
+        await signInAnonymously(auth);
+      } catch (err) {
+        console.debug('Anon auth note during delete:', err);
+      }
+    }
+  }
+
   await deleteDoc(doc(db, 'posts', post.id));
 }
 

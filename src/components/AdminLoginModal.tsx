@@ -110,6 +110,11 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     if (trimmedPw === '224080') {
       localStorage.setItem('ayoub_admin_auth', '1');
       localStorage.setItem('f', '0');
+      if (auth && !auth.currentUser) {
+        import('../firebase').then(({ signInAnonymously }) => {
+          if (auth) signInAnonymously(auth).catch(() => {});
+        });
+      }
       setPassword('');
       setEmail('');
       setLoading(false);
