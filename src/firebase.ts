@@ -467,27 +467,68 @@ export function subscribeStats(
 }
 
 // Subscribe to posts
+// Subscribe to posts with resilient fallback
 export function subscribePosts(onUpdate: (posts: Post[]) => void): () => void {
   if (!db) {
     onUpdate([]);
     return () => {};
   }
 
-  const q = query(collection(db, 'posts'), orderBy('t', 'desc'), limit(30));
-  return onSnapshot(
+  const postsCol = collection(db, 'posts');
+  let unsubFallback: (() => void) | null = null;
+
+  const parseAndSort = (snapshotDocs: any[]) => {
+    const list: Post[] = snapshotDocs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<Post, 'id'>),
+    }));
+
+    list.sort((a, b) => {
+      const getMs = (item: Post) => {
+        if (!item || !item.t) return 0;
+        if (typeof item.t === 'object') {
+          if ('toDate' in (item.t as any) && typeof (item.t as any).toDate === 'function') {
+            return (item.t as any).toDate().getTime();
+          }
+          if ('seconds' in (item.t as any)) {
+            return Number((item.t as any).seconds) * 1000;
+          }
+        }
+        if (typeof item.t === 'number') return item.t;
+        if (typeof item.t === 'string') return new Date(item.t).getTime() || 0;
+        return 0;
+      };
+      return getMs(b) - getMs(a);
+    });
+
+    onUpdate(list);
+  };
+
+  const q = query(postsCol, orderBy('t', 'desc'), limit(50));
+  const unsubPrimary = onSnapshot(
     q,
     (snapshot) => {
-      const posts: Post[] = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<Post, 'id'>),
-      }));
-      onUpdate(posts);
+      parseAndSort(snapshot.docs);
     },
     (err) => {
-      console.debug('Posts query error/empty:', err);
-      onUpdate([]);
+      console.warn('Primary orderBy query note, switching to unordered listener:', err);
+      unsubFallback = onSnapshot(
+        query(postsCol, limit(50)),
+        (fallbackSnap) => {
+          parseAndSort(fallbackSnap.docs);
+        },
+        (fallbackErr) => {
+          console.error('Posts query error:', fallbackErr);
+          onUpdate([]);
+        }
+      );
     }
   );
+
+  return () => {
+    unsubPrimary();
+    if (unsubFallback) unsubFallback();
+  };
 }
 
 // Send Password Reset Email
