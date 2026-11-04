@@ -284,7 +284,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="kooora.taqana@gmail.com"
+                placeholder={lang === 'en' ? 'Email' : lang === 'ar' ? 'البريد الإلكتروني' : 'ئیمێڵ'}
                 dir="ltr"
                 disabled={isLocked || loading}
                 style={{

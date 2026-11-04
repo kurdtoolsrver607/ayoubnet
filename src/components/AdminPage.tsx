@@ -469,7 +469,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     type="email"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="name@gmail.com"
+                    placeholder="ئیمێڵ"
                     dir="ltr"
                     disabled={isLocked || loginLoading}
                     style={{
