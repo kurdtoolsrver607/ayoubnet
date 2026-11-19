@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions for Isolated /trading Application
+    // ===============================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ONLY tafteshok@gmail.com is designated as the /trading Admin
+    function isTradingAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email != null &&
+        request.auth.token.email.lower() == 'tafteshok@gmail.com';
+    }
+
+    // Server-side block check: blocked users cannot read or write any trading data
+    function isNotBlocked() {
+      return isTradingAdmin() || (
+        isSignedIn() && (
+          !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBlocked != true
+        )
+      );
+    }
+
+    function isValidUserCreate(userId) {
+      let data = request.resource.data;
+      return isOwner(userId) &&
+        data.keys().hasAll(['email', 'displayName', 'role', 'isBlocked']) &&
+        data.keys().hasOnly(['email', 'displayName', 'role', 'isBlocked', 'createdAt', 'updatedAt']) &&
+        data.email is string &&
+        data.email.lower() == request.auth.token.email.lower() &&
+        data.displayName is string &&
+        data.displayName.size() > 0 &&
+        data.displayName.size() <= 80 &&
+        data.isBlocked == false &&
+        (
+          (isTradingAdmin() && data.role == 'admin') ||
+          (!isTradingAdmin() && data.role == 'user')
+        );
+    }
+
+    function isValidOwnerProfileUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['displayName', 'updatedAt']) &&
+        request.resource.data.displayName is string &&
+        request.resource.data.displayName.size() > 0 &&
+        request.resource.data.displayName.size() <= 80;
+    }
+
+    function isValidTradeSignal(userId) {
+      let data = request.resource.data;
+      return data.keys().hasAll(['uid', 'pair', 'type', 'entryPrice', 'stopLoss', 'tp1', 'lotSize', 'status']) &&
+        data.keys().hasOnly([
+          'uid', 'pair', 'type', 'entryPrice', 'stopLoss', 'tp1', 'tp2', 'tp3',
+          'lotSize', 'status', 'pips', 'riskReward', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.uid == userId &&
+        data.pair is string && data.pair.size() >= 2 && data.pair.size() <= 20 &&
+        data.type in ['BUY', 'SELL', 'BUY LIMIT', 'SELL LIMIT'] &&
+        data.entryPrice is number &&
+        data.stopLoss is number &&
+        data.tp1 is number &&
+        data.lotSize is number && data.lotSize > 0 && data.lotSize <= 1000 &&
+        data.status in ['Pending', 'Active', 'Won', 'Lost'] &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    function isValidPublicPost() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['authorUid', 'authorEmail', 'authorName', 'postType', 'title', 'body']) &&
+        data.keys().hasOnly([
+          'authorUid', 'authorEmail', 'authorName', 'postType', 'title', 'body',
+          'imageUrl', 'videoUrl', 'signal', 'createdAt'
+        ]) &&
+        data.authorUid == request.auth.uid &&
+        data.postType in ['announcement', 'signal', 'media'] &&
+        data.title is string && data.title.size() <= 180 &&
+        data.body is string && data.body.size() <= 4000;
+    }
+
+    // ===============================================================
+    // Isolated /trading Collections
+    // ===============================================================
+
+    // User Profiles: owner can read own profile; Admin can list all & toggle isBlocked
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isTradingAdmin();
+      allow list: if isTradingAdmin();
+      allow create: if isValidUserCreate(userId);
+      allow update: if isTradingAdmin() || (isOwner(userId) && isNotBlocked() && isValidOwnerProfileUpdate());
+      allow delete: if isTradingAdmin();
+
+      // Strictly Private Per-User Trading Journal & Signals
+      // Zero cross-user access; even blocked users are immediately cut off server-side
+      match /trades/{tradeId} {
+        allow read: if isOwner(userId) && isNotBlocked();
+        allow create: if isOwner(userId) && isNotBlocked() && isValidTradeSignal(userId);
+        allow update: if isOwner(userId) && isNotBlocked() && isValidTradeSignal(userId);
+        allow delete: if isOwner(userId) && isNotBlocked();
+      }
+    }
+
+    // Public Broadcast Feed: Active logged-in users can read; ONLY tafteshok@gmail.com can post/delete
+    match /public_posts/{postId} {
+      allow read: if isSignedIn() && isNotBlocked();
+      allow create: if isTradingAdmin() && isValidPublicPost();
+      allow update: if isTradingAdmin() && isValidPublicPost();
+      allow delete: if isTradingAdmin();
+    }
+
+    // ===============================================================
+    // Existing Main Website Collections (Preserved Undisturbed)
+    // ===============================================================
+    match /posts/{postId} {
+      allow read, write: if true;
+    }
+    match /stats/{docId} {
+      allow read, write: if true;
+    }
+    match /settings/{docId} {
+      allow read, write: if true;
+    }
+    match /store/{itemId} {
+      allow read, write: if true;
+    }
+
+    // Default deny for everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

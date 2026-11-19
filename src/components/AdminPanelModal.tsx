@@ -913,7 +913,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             whiteSpace: 'pre-wrap',
                             wordBreak: 'break-word',
                             fontFamily: p.type === 'code' ? "'JetBrains Mono', monospace" : 'inherit',
-                            direction: p.type === 'code' ? 'ltr' : 'auto',
+                            direction: p.type === 'code' ? 'ltr' : undefined,
                             background: p.type === 'code' ? 'rgba(0, 0, 0, 0.3)' : 'transparent',
                             padding: p.type === 'code' ? '8px 10px' : '0',
                             borderRadius: p.type === 'code' ? '6px' : '0',

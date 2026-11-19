@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "TradingUser": {
+      "title": "TradingUser",
+      "description": "Isolated trading application user profile stored at users/{uid}.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "isBlocked": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "displayName", "role", "isBlocked"]
+    },
+    "TradeSignal": {
+      "title": "TradeSignal",
+      "description": "Private trading journal entry scoped strictly to users/{uid}/trades/{tradeId}.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "pair": { "type": "string" },
+        "type": { "type": "string", "enum": ["BUY", "SELL", "BUY LIMIT", "SELL LIMIT"] },
+        "entryPrice": { "type": "number" },
+        "stopLoss": { "type": "number" },
+        "tp1": { "type": "number" },
+        "tp2": { "type": "number" },
+        "tp3": { "type": "number" },
+        "lotSize": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Active", "Won", "Lost"] },
+        "pips": { "type": "number" },
+        "riskReward": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "pair", "type", "entryPrice", "stopLoss", "tp1", "lotSize", "status"]
+    },
+    "PublicFeedPost": {
+      "title": "PublicFeedPost",
+      "description": "Admin-authored broadcast post (announcement, image, video, or public signal).",
+      "type": "object",
+      "properties": {
+        "authorUid": { "type": "string" },
+        "authorEmail": { "type": "string", "format": "email" },
+        "authorName": { "type": "string" },
+        "postType": { "type": "string", "enum": ["announcement", "signal", "media"] },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "signal": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorUid", "authorEmail", "postType", "title"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/TradingUser" },
+      "description": "User profiles for /trading with role and server-enforced isBlocked flag."
+    },
+    "/users/{userId}/trades/{tradeId}": {
+      "schema": { "$ref": "#/entities/TradeSignal" },
+      "description": "Strictly private per-user trading signals and journal entries."
+    },
+    "/public_posts/{postId}": {
+      "schema": { "$ref": "#/entities/PublicFeedPost" },
+      "description": "Public feed posts readable by active logged-in users and writable only by Admin (tafteshok@gmail.com)."
+    }
+  }
+}

@@ -407,7 +407,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const filteredPosts = localPosts.filter((p) => {
     let matchCat = true;
     if (postsFilter === 'general') {
-      matchCat = !p.category || p.category === 'general' || p.category === 'عام';
+      matchCat = !p.category || p.category === 'general' || String(p.category) === 'عام';
     } else if (postsFilter === 'programming') {
       matchCat = p.category === 'programming';
     } else if (postsFilter === 'posts') {

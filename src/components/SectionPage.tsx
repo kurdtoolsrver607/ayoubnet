@@ -155,7 +155,8 @@ export const SectionPage: React.FC<SectionPageProps> = ({
     },
   };
 
-  const currentMeta = (metaTranslations[lang] || metaTranslations.ku)[section];
+  const langMeta = metaTranslations[lang] || metaTranslations.ku;
+  const currentMeta = langMeta[section as keyof typeof langMeta] || langMeta.home;
 
   const meta = {
     title: currentMeta.title,
