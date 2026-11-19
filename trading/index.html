@@ -32,11 +32,11 @@
       --tr-muted: #8492A6;
       --tr-buy: #10B981;
       --tr-buy-soft: rgba(16, 185, 129, 0.14);
-      --tr-buy-border: rgba(16, 185, 129, 0.34);
+      --tr-buy-border: rgba(16, 185, 129, 0.36);
       --tr-teal: #14B8A6;
       --tr-sell: #EF4444;
       --tr-sell-soft: rgba(239, 68, 68, 0.14);
-      --tr-sell-border: rgba(239, 68, 68, 0.34);
+      --tr-sell-border: rgba(239, 68, 68, 0.36);
       --tr-amber: #F59E0B;
       --tr-amber-soft: rgba(245, 158, 11, 0.14);
       --tr-amber-border: rgba(245, 158, 11, 0.34);
@@ -116,10 +116,7 @@
         var(--tr-bg);
     }
 
-    .tr-auth-wrap {
-      width: 100%;
-      max-width: 420px;
-    }
+    .tr-auth-wrap { width: 100%; max-width: 420px; }
 
     /* App Shell */
     .tr-shell {
@@ -317,14 +314,117 @@
     }
 
     .tr-price-cell {
-      background: rgba(11, 15, 23, 0.7);
+      background: rgba(11, 15, 23, 0.72);
       border: 1px solid var(--tr-border);
       border-radius: 10px;
       padding: 8px 10px;
       display: flex;
       flex-direction: column;
       gap: 2px;
+      transition: border-color 180ms ease, background-color 180ms ease;
     }
+    .tr-price-cell.tp-hit {
+      background: rgba(16, 185, 129, 0.16);
+      border-color: rgba(16, 185, 129, 0.55);
+    }
+    .tr-price-cell.sl-hit {
+      background: rgba(239, 68, 68, 0.16);
+      border-color: rgba(239, 68, 68, 0.55);
+    }
+
+    /* Live Ticker Strip Inside Signal Card */
+    .tr-live-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 9px 12px;
+      border-radius: 11px;
+      background: rgba(9, 13, 21, 0.9);
+      border: 1px solid var(--tr-border);
+    }
+
+    .tr-live-price {
+      font-family: var(--tr-font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 15px;
+      font-weight: 800;
+      color: #F8FAFC;
+      padding: 2px 7px;
+      border-radius: 7px;
+      transition: background-color 220ms ease, color 220ms ease;
+    }
+    .tr-tick-up {
+      animation: trFlashUp 650ms ease;
+    }
+    .tr-tick-down {
+      animation: trFlashDown 650ms ease;
+    }
+    @keyframes trFlashUp {
+      0% { background: rgba(16, 185, 129, 0.42); color: #ECFDF5; }
+      100% { background: transparent; color: #F8FAFC; }
+    }
+    @keyframes trFlashDown {
+      0% { background: rgba(239, 68, 68, 0.42); color: #FEF2F2; }
+      100% { background: transparent; color: #F8FAFC; }
+    }
+
+    /* Execution Result Banners */
+    .tr-banner-sl {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.48);
+      color: #FECACA;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+    .tr-banner-tp {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(16, 185, 129, 0.48);
+      color: #A7F3D0;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    /* Toast Notification Stack */
+    .tr-toast-stack {
+      position: fixed;
+      top: calc(14px + env(safe-area-inset-top, 0px));
+      right: 14px;
+      z-index: 80;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: min(360px, calc(100vw - 28px));
+      pointer-events: none;
+    }
+    .tr-toast {
+      pointer-events: auto;
+      padding: 11px 14px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid var(--tr-border-strong);
+      color: #F8FAFC;
+      font-size: 12.5px;
+      font-weight: 600;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+      animation: trSlideUp 180ms ease;
+    }
+    .tr-toast.win { border-color: var(--tr-buy-border); color: #A7F3D0; }
+    .tr-toast.loss { border-color: var(--tr-sell-border); color: #FECACA; }
+    .tr-toast.active { border-color: rgba(56, 189, 248, 0.45); color: #BAE6FD; }
 
     /* Inputs & Buttons */
     .tr-label {
@@ -557,6 +657,7 @@
     }
 
     .tr-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .tr-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .tr-flex-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
     .tr-stack { display: flex; flex-direction: column; gap: 14px; }
     .tr-stack-lg { display: flex; flex-direction: column; gap: 16px; }
@@ -568,6 +669,9 @@
   </style>
 </head>
 <body>
+  <!-- Auto-Trigger Live Toast Notifications -->
+  <div id="tr-toast-stack" class="tr-toast-stack" aria-live="polite"></div>
+
   <!-- =========================================================
        VIEW 1: AUTH SCREEN (Rendered Immediately on Frame 1)
        ========================================================= -->
@@ -579,18 +683,16 @@
         </div>
         <div>
           <div style="font-size:18px;font-weight:800;letter-spacing:-0.02em;color:#F8FAFC;">FX Desk Terminal</div>
-          <div style="font-size:12.5px;color:var(--tr-muted);">Private Trading Journal &amp; Market Analytics</div>
+          <div style="font-size:12.5px;color:var(--tr-muted);">Private Trading Journal &amp; Live Execution Engine</div>
         </div>
       </div>
 
       <div class="tr-card" style="padding:24px 22px;background:rgba(17,24,39,0.94);border-color:var(--tr-border-strong);">
-        <!-- Mode Switcher (Login / Create Account) -->
         <div id="auth-tabs" class="tr-segmented" style="width:100%;display:grid;grid-template-columns:1fr 1fr;margin-bottom:20px;">
           <button type="button" id="auth-tab-login" class="tr-seg-btn tr-press active" onclick="setAuthMode('login')">Sign In</button>
           <button type="button" id="auth-tab-signup" class="tr-seg-btn tr-press" onclick="setAuthMode('signup')">Create Account</button>
         </div>
 
-        <!-- Reset Header (shown only in reset mode) -->
         <div id="auth-reset-header" class="hidden" style="margin-bottom:18px;">
           <button type="button" class="tr-press" onclick="setAuthMode('login')" style="display:inline-flex;align-items:center;gap:6px;background:transparent;border:none;color:var(--tr-muted);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:10px;">
             &larr; Back to Sign In
@@ -671,7 +773,6 @@
        VIEW 3: MAIN 5-TAB TRADING APP SHELL
        ========================================================= -->
   <div id="view-app" class="tr-shell hidden">
-    <!-- Desktop Sidebar -->
     <aside class="tr-sidebar" aria-label="Trading Navigation">
       <div class="tr-sidebar-brand">
         <div class="tr-brand-mark">
@@ -691,9 +792,7 @@
       </div>
     </aside>
 
-    <!-- Main Content Column -->
     <div class="tr-main">
-      <!-- Mobile Compact Sticky Top Bar -->
       <header class="tr-topbar">
         <div style="display:flex;align-items:center;gap:10px;min-width:0;">
           <div class="tr-brand-mark" style="width:30px;height:30px;border-radius:9px;">
@@ -707,7 +806,6 @@
         </div>
       </header>
 
-      <!-- Active Tab Viewport -->
       <main class="tr-content">
         <section id="tab-analysis" class="tr-stack-lg"></section>
         <section id="tab-journal" class="tr-stack-lg hidden"></section>
@@ -717,7 +815,6 @@
       </main>
     </div>
 
-    <!-- Fixed 5-Tab Bottom Navigation Bar (Mobile / Android WebView) -->
     <nav class="tr-bottom-nav" id="bottom-nav" aria-label="Bottom Navigation"></nav>
   </div>
 
@@ -735,7 +832,7 @@
       <div class="tr-sheet-header">
         <div>
           <h2 id="trade-modal-title" style="margin:0;font-size:17px;font-weight:800;color:#F8FAFC;">Log Private Trade Signal</h2>
-          <div style="font-size:12px;color:var(--tr-muted);">Auto-calculates Risk:Reward &amp; account metrics</div>
+          <div style="font-size:12px;color:var(--tr-muted);">Linked to live market price · Auto-triggers Entry, TP &amp; SL</div>
         </div>
         <button type="button" class="tr-btn tr-btn-sm tr-press" style="padding:6px 10px;min-height:36px;" onclick="closeTradeModal()" aria-label="Close">&times;</button>
       </div>
@@ -744,14 +841,16 @@
           <div id="trade-form-err" class="tr-alert tr-alert-err hidden"></div>
 
           <div>
-            <label class="tr-label" for="tf-pair">Instrument / Pair *</label>
-            <input id="tf-pair" type="text" class="tr-input tr-mono" value="XAUUSD" placeholder="XAUUSD" required>
-            <div class="tr-scroll-x" id="tf-pair-presets" style="display:flex;gap:6px;margin-top:8px;"></div>
+            <div class="tr-flex-between" style="margin-bottom:6px;">
+              <label class="tr-label" for="tf-pair" style="margin-bottom:0;">Trading Pair *</label>
+              <span id="tf-live-quote" class="tr-mono" style="font-size:12px;color:#6EE7B7;"></span>
+            </div>
+            <select id="tf-pair" class="tr-select tr-mono" required></select>
           </div>
 
           <div>
             <label class="tr-label">Order Type *</label>
-            <div class="tr-grid-2" id="tf-dir-buttons"></div>
+            <div class="tr-grid-3" id="tf-dir-buttons"></div>
           </div>
 
           <div class="tr-grid-2">
@@ -788,24 +887,24 @@
               <div id="tf-rr-preview" class="tr-mono" style="font-size:18px;font-weight:800;color:var(--tr-muted);">&mdash;</div>
             </div>
             <div class="tr-mono" style="font-size:12px;color:var(--tr-text-secondary);text-align:right;">
-              <div id="tf-sl-pips">SL risk: 0 pips</div>
-              <div id="tf-tp-pips" style="color:#6EE7B7;">TP1 reward: +0 pips</div>
+              <div id="tf-sl-pips">SL risk: 0.0 pips</div>
+              <div id="tf-tp-pips" style="color:#6EE7B7;">TP1 reward: +0.0 pips</div>
             </div>
           </div>
 
           <div class="tr-grid-2">
             <div>
-              <label class="tr-label" for="tf-status">Status</label>
+              <label class="tr-label" for="tf-status">Initial Status</label>
               <select id="tf-status" class="tr-select">
                 <option value="Active">Active</option>
-                <option value="Pending">Pending</option>
+                <option value="Pending">Pending (Auto-Trigger)</option>
                 <option value="Won">Won</option>
                 <option value="Lost">Lost</option>
               </select>
             </div>
             <div>
               <label class="tr-label" for="tf-pips">Pips Result</label>
-              <input id="tf-pips" type="number" step="any" class="tr-input tr-mono" value="0" placeholder="e.g. 120 or -45">
+              <input id="tf-pips" type="number" step="any" class="tr-input tr-mono" value="0" placeholder="Auto-calculated">
             </div>
           </div>
 
@@ -860,8 +959,8 @@
           <div id="pf-signal-fields" class="hidden" style="padding:14px;border-radius:12px;background:rgba(11,15,23,0.75);border:1px solid var(--tr-border-strong);display:flex;flex-direction:column;gap:10px;">
             <div class="tr-grid-2">
               <div>
-                <label class="tr-label" for="pf-sig-pair">Pair *</label>
-                <input id="pf-sig-pair" type="text" class="tr-input tr-mono" value="XAUUSD">
+                <label class="tr-label" for="pf-sig-pair">Trading Pair *</label>
+                <select id="pf-sig-pair" class="tr-select tr-mono"></select>
               </div>
               <div>
                 <label class="tr-label" for="pf-sig-dir">Order Type *</label>
@@ -870,16 +969,18 @@
                   <option value="SELL">SELL</option>
                   <option value="BUY LIMIT">BUY LIMIT</option>
                   <option value="SELL LIMIT">SELL LIMIT</option>
+                  <option value="BUY STOP">BUY STOP</option>
+                  <option value="SELL STOP">SELL STOP</option>
                 </select>
               </div>
             </div>
             <div class="tr-grid-2">
               <div>
-                <label class="tr-label" for="pf-sig-entry">Entry *</label>
+                <label class="tr-label" for="pf-sig-entry">Entry Price *</label>
                 <input id="pf-sig-entry" type="number" step="any" class="tr-input tr-mono">
               </div>
               <div>
-                <label class="tr-label" for="pf-sig-sl">Stop Loss *</label>
+                <label class="tr-label" for="pf-sig-sl">Stop Loss (SL) *</label>
                 <input id="pf-sig-sl" type="number" step="any" class="tr-input tr-mono">
               </div>
               <div>
@@ -891,9 +992,18 @@
                 <input id="pf-sig-tp2" type="number" step="any" class="tr-input tr-mono">
               </div>
             </div>
-            <div>
-              <label class="tr-label" for="pf-sig-tp3">TP 3 (optional)</label>
-              <input id="pf-sig-tp3" type="number" step="any" class="tr-input tr-mono">
+            <div class="tr-grid-2">
+              <div>
+                <label class="tr-label" for="pf-sig-tp3">TP 3 (optional)</label>
+                <input id="pf-sig-tp3" type="number" step="any" class="tr-input tr-mono">
+              </div>
+              <div>
+                <label class="tr-label" for="pf-sig-status">Initial Status</label>
+                <select id="pf-sig-status" class="tr-select">
+                  <option value="Active">Active</option>
+                  <option value="Pending">Pending (Auto-Trigger)</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -935,11 +1045,18 @@
       'use strict';
 
       // =====================================================
-      // 1. FIREBASE CONFIGURATION (Public Web App Identifiers Only - ZERO Passwords)
+      // 1. LIVE PRICE FEED & FIREBASE CONFIGURATION
       // =====================================================
+      // Optional Twelve Data API Key (https://twelvedata.com)
+      // Paste your Twelve Data API key below for real-time WebSocket + REST ticks on Forex, Gold, Silver & Crypto.
+      // When left empty, the engine automatically uses free zero-key public market feeds (Binance WS/REST, Gold-API, Open ER-API).
+      const TWELVE_DATA_API_KEY = '';
+      const PRICE_POLL_INTERVAL_MS = 4000;
+
       const TRADING_ADMIN_EMAIL = 'tafteshok@gmail.com';
       const BASE_EQUITY_KEY = 'tr_isolated_base_equity_v1';
 
+      // Public Firebase Web App Config (ZERO hardcoded passwords or secrets)
       const FIREBASE_CONFIG = {
         apiKey: "AIzaSyAfL6z1wyRAmI07-cDb11cLf1s-6hCSIvM",
         authDomain: "myapp-59c7a.firebaseapp.com",
@@ -951,18 +1068,24 @@
         measurementId: "G-06Z7472FD7"
       };
 
-      const POPULAR_PAIRS = ['XAUUSD', 'XAGUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'GBPJPY', 'AUDUSD', 'BTCUSD'];
-      const DIRECTIONS = ['BUY', 'SELL', 'BUY LIMIT', 'SELL LIMIT'];
-      const MARKET_INSTRUMENTS = [
-        { label: 'Gold', symbol: 'XAUUSD', tvSymbol: 'OANDA:XAUUSD' },
-        { label: 'Silver', symbol: 'XAGUSD', tvSymbol: 'OANDA:XAGUSD' },
-        { label: 'Euro', symbol: 'EURUSD', tvSymbol: 'OANDA:EURUSD' },
-        { label: 'Pound', symbol: 'GBPUSD', tvSymbol: 'OANDA:GBPUSD' },
-        { label: 'Dollar/Yen', symbol: 'USDJPY', tvSymbol: 'OANDA:USDJPY' },
-        { label: 'Pound/Yen', symbol: 'GBPJPY', tvSymbol: 'OANDA:GBPJPY' },
-        { label: 'Aussie', symbol: 'AUDUSD', tvSymbol: 'OANDA:AUDUSD' },
-        { label: 'Bitcoin', symbol: 'BTCUSD', tvSymbol: 'BITSTAMP:BTCUSD' }
+      const SUPPORTED_PAIRS = [
+        { symbol: 'XAUUSD', label: 'Gold / USD', twelve: 'XAU/USD', decimals: 2, pipSize: 0.1, tvSymbol: 'OANDA:XAUUSD' },
+        { symbol: 'XAGUSD', label: 'Silver / USD', twelve: 'XAG/USD', decimals: 3, pipSize: 0.01, tvSymbol: 'OANDA:XAGUSD' },
+        { symbol: 'EURUSD', label: 'EUR / USD', twelve: 'EUR/USD', decimals: 5, pipSize: 0.0001, tvSymbol: 'OANDA:EURUSD' },
+        { symbol: 'GBPUSD', label: 'GBP / USD', twelve: 'GBP/USD', decimals: 5, pipSize: 0.0001, tvSymbol: 'OANDA:GBPUSD' },
+        { symbol: 'USDJPY', label: 'USD / JPY', twelve: 'USD/JPY', decimals: 3, pipSize: 0.01, tvSymbol: 'OANDA:USDJPY' },
+        { symbol: 'GBPJPY', label: 'GBP / JPY', twelve: 'GBP/JPY', decimals: 3, pipSize: 0.01, tvSymbol: 'OANDA:GBPJPY' },
+        { symbol: 'AUDUSD', label: 'AUD / USD', twelve: 'AUD/USD', decimals: 5, pipSize: 0.0001, tvSymbol: 'OANDA:AUDUSD' },
+        { symbol: 'USDCAD', label: 'USD / CAD', twelve: 'USD/CAD', decimals: 5, pipSize: 0.0001, tvSymbol: 'OANDA:USDCAD' },
+        { symbol: 'USDCHF', label: 'USD / CHF', twelve: 'USD/CHF', decimals: 5, pipSize: 0.0001, tvSymbol: 'OANDA:USDCHF' },
+        { symbol: 'NZDUSD', label: 'NZD / USD', twelve: 'NZD/USD', decimals: 5, pipSize: 0.0001, tvSymbol: 'OANDA:NZDUSD' },
+        { symbol: 'BTCUSD', label: 'Bitcoin / USD', twelve: 'BTC/USD', decimals: 2, pipSize: 1, tvSymbol: 'BITSTAMP:BTCUSD' },
+        { symbol: 'ETHUSD', label: 'Ethereum / USD', twelve: 'ETH/USD', decimals: 2, pipSize: 1, tvSymbol: 'BITSTAMP:ETHUSD' }
       ];
+
+      const DIRECTIONS = ['BUY', 'SELL', 'BUY LIMIT', 'SELL LIMIT', 'BUY STOP', 'SELL STOP'];
+
+      const MARKET_INSTRUMENTS = SUPPORTED_PAIRS.slice(0, 8);
       const TIMEFRAMES = [
         { label: '5m', value: '5' },
         { label: '15m', value: '15' },
@@ -1002,6 +1125,14 @@
         trades: [],
         posts: [],
         allUsers: [],
+        // Live price engine state
+        livePrices: {},       // { XAUUSD: { price, prev, updatedAt, source } }
+        pricePollTimer: null,
+        twelveWs: null,
+        twelveWsSymbols: '',
+        binanceWs: null,
+        binanceWsStreams: '',
+        pendingTriggerLocks: {}, // Prevents duplicate Firestore writes on rapid ticks
         // UI state
         journalFilter: 'All',
         journalSearch: '',
@@ -1038,8 +1169,17 @@
         try { localStorage.setItem(BASE_EQUITY_KEY, String(val)); } catch (e) {}
       }
 
+      // Populate pair dropdowns cleanly once on load
+      (function populatePairSelects() {
+        const html = SUPPORTED_PAIRS.map(function (p) {
+          return '<option value="' + p.symbol + '" style="background:#111827;">' + p.symbol + ' — ' + p.label + '</option>';
+        }).join('');
+        document.getElementById('tf-pair').innerHTML = html;
+        document.getElementById('pf-sig-pair').innerHTML = html;
+      })();
+
       // =====================================================
-      // 3. UTILITIES & FORMATTING
+      // 3. UTILITIES, SYMBOL METADATA & FORMATTING
       // =====================================================
       function esc(str) {
         return String(str == null ? '' : str)
@@ -1052,6 +1192,44 @@
 
       function isAdminEmail(email) {
         return String(email || '').trim().toLowerCase() === TRADING_ADMIN_EMAIL;
+      }
+
+      function isBuyDirection(dir) {
+        return String(dir || 'BUY').toUpperCase().indexOf('BUY') === 0;
+      }
+
+      function isPendingOrderType(dir) {
+        const d = String(dir || '').toUpperCase();
+        return d.indexOf('LIMIT') !== -1 || d.indexOf('STOP') !== -1;
+      }
+
+      function getPairMeta(pair) {
+        const sym = String(pair || 'XAUUSD').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const found = SUPPORTED_PAIRS.find(function (p) { return p.symbol === sym; });
+        if (found) return found;
+        const isJpy = sym.indexOf('JPY') !== -1;
+        const isMetal = sym.indexOf('XAU') !== -1 || sym.indexOf('GOLD') !== -1;
+        return {
+          symbol: sym || 'XAUUSD',
+          label: sym || 'XAUUSD',
+          twelve: sym.length === 6 ? (sym.slice(0, 3) + '/' + sym.slice(3)) : sym,
+          decimals: isMetal ? 2 : isJpy ? 3 : 5,
+          pipSize: isMetal ? 0.1 : isJpy ? 0.01 : 0.0001,
+          tvSymbol: 'OANDA:' + (sym || 'XAUUSD')
+        };
+      }
+
+      function formatPrice(pair, price) {
+        if (price == null || isNaN(price)) return '—';
+        const meta = getPairMeta(pair);
+        return Number(price).toFixed(meta.decimals);
+      }
+
+      function formatPips(pips) {
+        const n = Number(pips || 0);
+        if (isNaN(n)) return '0.0';
+        const rounded = Math.round(n * 10) / 10;
+        return (rounded > 0 ? '+' : '') + rounded.toFixed(1);
       }
 
       function getTsMs(ts) {
@@ -1071,18 +1249,9 @@
         });
       }
 
-      function getPipSize(pair) {
-        const p = String(pair || '').trim().toUpperCase();
-        if (p.includes('XAU') || p.includes('GOLD')) return 0.1;
-        if (p.includes('XAG') || p.includes('SILVER')) return 0.01;
-        if (p.includes('JPY')) return 0.01;
-        if (p.includes('BTC') || p.includes('US30') || p.includes('NAS') || p.includes('SPX')) return 1;
-        return 0.0001;
-      }
-
       function calcRR(entry, sl, tp1, direction) {
         if (!entry || !sl || !tp1 || isNaN(entry) || isNaN(sl) || isNaN(tp1)) return 0;
-        const isSell = direction ? direction.indexOf('SELL') === 0 : sl > entry;
+        const isSell = direction ? !isBuyDirection(direction) : sl > entry;
         const risk = isSell ? (sl - entry) : (entry - sl);
         const reward = isSell ? (entry - tp1) : (tp1 - entry);
         if (risk <= 0 || reward <= 0) {
@@ -1093,21 +1262,30 @@
         return Number((reward / risk).toFixed(2));
       }
 
-      function estimatePips(pair, entry, target) {
-        if (!entry || !target || isNaN(entry) || isNaN(target)) return 0;
-        return Math.round(Math.abs(target - entry) / getPipSize(pair));
+      function calcSignedPips(pair, direction, entry, currentPrice) {
+        if (!entry || !currentPrice || isNaN(entry) || isNaN(currentPrice)) return 0;
+        const pipSize = getPairMeta(pair).pipSize;
+        const diff = isBuyDirection(direction) ? (currentPrice - entry) : (entry - currentPrice);
+        return Number((diff / pipSize).toFixed(1));
       }
 
-      function toTVSymbol(pair) {
-        const clean = String(pair || 'XAUUSD').trim().toUpperCase().replace(/[^A-Z0-9:]/g, '');
-        if (clean.includes(':')) return clean;
-        if (clean === 'XAUUSD' || clean === 'GOLD') return 'OANDA:XAUUSD';
-        if (clean === 'XAGUSD' || clean === 'SILVER') return 'OANDA:XAGUSD';
-        if (clean === 'BTCUSD' || clean === 'BTCUSDT') return 'BITSTAMP:BTCUSD';
-        if (clean === 'ETHUSD' || clean === 'ETHUSDT') return 'BITSTAMP:ETHUSD';
-        if (clean === 'US30') return 'OANDA:US30USD';
-        if (clean === 'NAS100') return 'OANDA:NAS100USD';
-        return 'OANDA:' + clean;
+      function estimatePipsAbs(pair, entry, target) {
+        if (!entry || !target || isNaN(entry) || isNaN(target)) return 0;
+        return Number((Math.abs(target - entry) / getPairMeta(pair).pipSize).toFixed(1));
+      }
+
+      function showToast(message, variant) {
+        const stack = document.getElementById('tr-toast-stack');
+        if (!stack) return;
+        const el = document.createElement('div');
+        el.className = 'tr-toast ' + (variant || '');
+        el.textContent = message;
+        stack.appendChild(el);
+        setTimeout(function () {
+          el.style.opacity = '0';
+          el.style.transition = 'opacity 250ms ease';
+          setTimeout(function () { if (el.parentElement) el.parentElement.removeChild(el); }, 260);
+        }, 4200);
       }
 
       function mapAuthError(err) {
@@ -1147,8 +1325,7 @@
             img.onload = function () {
               const steps = [[1200, 0.8], [960, 0.72], [720, 0.62], [560, 0.52]];
               for (let i = 0; i < steps.length; i++) {
-                const maxDim = steps[i][0];
-                const quality = steps[i][1];
+                const maxDim = steps[i][0], quality = steps[i][1];
                 let w = img.width, h = img.height;
                 if (w > maxDim || h > maxDim) {
                   if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
@@ -1171,7 +1348,491 @@
       }
 
       // =====================================================
-      // 4. ANALYTICS & SMART GUIDANCE ENGINE
+      // 4. LIVE PRICE ENGINE (Twelve Data WS/REST + Free Real-Time Fallbacks)
+      // =====================================================
+      function getTrackedPairs() {
+        const set = {};
+        state.trades.forEach(function (t) {
+          if (t.status === 'Active' || t.status === 'Pending') {
+            set[getPairMeta(t.pair).symbol] = true;
+          }
+        });
+        state.posts.forEach(function (p) {
+          if (p.signal && p.signal.pair && (p.signal.status === 'Active' || p.signal.status === 'Pending' || !p.signal.status)) {
+            set[getPairMeta(p.signal.pair).symbol] = true;
+          }
+        });
+        // Also track currently selected pair in trade modal if open
+        if (!document.getElementById('trade-modal').classList.contains('hidden')) {
+          const mp = document.getElementById('tf-pair').value;
+          if (mp) set[getPairMeta(mp).symbol] = true;
+        }
+        return Object.keys(set);
+      }
+
+      function ingestLivePrice(symbol, rawPrice, source) {
+        const price = Number(rawPrice);
+        if (!price || isNaN(price) || price <= 0) return;
+        const sym = getPairMeta(symbol).symbol;
+        const existing = state.livePrices[sym];
+        const prev = existing ? existing.price : price;
+        state.livePrices[sym] = {
+          price: price,
+          prev: prev,
+          updatedAt: Date.now(),
+          source: source || 'live'
+        };
+
+        const direction = price > prev ? 'up' : price < prev ? 'down' : 'flat';
+        updateLiveDOMForSymbol(sym, price, direction);
+        evaluateAutoTriggersForSymbol(sym, price);
+      }
+
+      function updateLiveDOMForSymbol(sym, price, direction) {
+        const formatted = formatPrice(sym, price);
+
+        // Update live quote label in Trade Modal if matching
+        const modalQuote = document.getElementById('tf-live-quote');
+        const modalPair = document.getElementById('tf-pair');
+        if (modalQuote && modalPair && getPairMeta(modalPair.value).symbol === sym) {
+          modalQuote.textContent = 'Live: ' + formatted;
+        }
+
+        // Update all card live price badges in-place (zero full re-render flicker!)
+        const priceNodes = document.querySelectorAll('[data-live-price="' + sym + '"]');
+        priceNodes.forEach(function (node) {
+          node.textContent = formatted;
+          if (direction === 'up' || direction === 'down') {
+            node.classList.remove('tr-tick-up', 'tr-tick-down');
+            void node.offsetWidth; // trigger reflow for smooth flash replay
+            node.classList.add(direction === 'up' ? 'tr-tick-up' : 'tr-tick-down');
+          }
+        });
+
+        // Update floating pips / distance-to-entry on Private Journal cards
+        state.trades.forEach(function (t) {
+          if (getPairMeta(t.pair).symbol !== sym) return;
+          const pipNode = document.querySelector('[data-live-pips="trade:' + t.id + '"]');
+          if (!pipNode) return;
+          if (t.status === 'Active') {
+            const fp = calcSignedPips(t.pair, t.type, t.entryPrice, price);
+            pipNode.textContent = formatPips(fp) + ' pips';
+            pipNode.style.color = fp > 0 ? 'var(--tr-buy)' : fp < 0 ? 'var(--tr-sell)' : 'var(--tr-text-secondary)';
+          } else if (t.status === 'Pending') {
+            const dist = estimatePipsAbs(t.pair, price, t.entryPrice);
+            pipNode.textContent = dist.toFixed(1) + ' pips to entry';
+            pipNode.style.color = '#FCD34D';
+          }
+        });
+
+        // Update floating pips / distance-to-entry on Admin Public Feed cards
+        state.posts.forEach(function (post) {
+          if (!post.signal || getPairMeta(post.signal.pair).symbol !== sym) return;
+          const s = post.signal;
+          const pipNode = document.querySelector('[data-live-pips="post:' + post.id + '"]');
+          if (!pipNode) return;
+          const st = s.status || 'Active';
+          if (st === 'Active') {
+            const fp = calcSignedPips(s.pair, s.type, s.entryPrice, price);
+            pipNode.textContent = formatPips(fp) + ' pips';
+            pipNode.style.color = fp > 0 ? 'var(--tr-buy)' : fp < 0 ? 'var(--tr-sell)' : 'var(--tr-text-secondary)';
+          } else if (st === 'Pending') {
+            const dist = estimatePipsAbs(s.pair, price, s.entryPrice);
+            pipNode.textContent = dist.toFixed(1) + ' pips to entry';
+            pipNode.style.color = '#FCD34D';
+          }
+        });
+      }
+
+      // =====================================================
+      // 5. AUTO-EXECUTION TRIGGER ENGINE (Pending -> Active -> TP / SL)
+      // =====================================================
+      function shouldActivatePending(type, entryPrice, livePrice) {
+        const d = String(type || 'BUY').toUpperCase();
+        if (d === 'BUY LIMIT') return livePrice <= entryPrice;
+        if (d === 'SELL LIMIT') return livePrice >= entryPrice;
+        if (d === 'BUY STOP') return livePrice >= entryPrice;
+        if (d === 'SELL STOP') return livePrice <= entryPrice;
+        if (d === 'BUY') return livePrice <= entryPrice;
+        if (d === 'SELL') return livePrice >= entryPrice;
+        return false;
+      }
+
+      function computeTriggerTransition(sig, livePrice) {
+        const status = sig.status || 'Active';
+        if (status === 'Won' || status === 'Lost') return null;
+
+        const pair = sig.pair;
+        const type = sig.type;
+        const entry = Number(sig.entryPrice);
+        const sl = Number(sig.stopLoss);
+        const tp1 = Number(sig.tp1);
+        const tp2 = (sig.tp2 != null && sig.tp2 !== '' && Number(sig.tp2) > 0) ? Number(sig.tp2) : null;
+        const tp3 = (sig.tp3 != null && sig.tp3 !== '' && Number(sig.tp3) > 0) ? Number(sig.tp3) : null;
+        const isBuy = isBuyDirection(type);
+
+        // 1. PENDING -> ACTIVE
+        if (status === 'Pending') {
+          if (shouldActivatePending(type, entry, livePrice)) {
+            return {
+              event: 'activated',
+              toastText: pair + ' ' + type + ' activated at ' + formatPrice(pair, livePrice),
+              toastTone: 'active',
+              updates: {
+                status: 'Active',
+                triggeredPrice: livePrice,
+                activatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              }
+            };
+          }
+          return null;
+        }
+
+        // 2. ACTIVE -> TAKE PROFIT (TP1 / TP2 / TP3) OR STOP LOSS
+        if (status === 'Active') {
+          const prevTp1 = Boolean(sig.tp1Hit);
+          const prevTp2 = Boolean(sig.tp2Hit);
+          const prevTp3 = Boolean(sig.tp3Hit);
+
+          const hitTp1 = prevTp1 || (tp1 > 0 && (isBuy ? livePrice >= tp1 : livePrice <= tp1));
+          const hitTp2 = prevTp2 || (tp2 != null && (isBuy ? livePrice >= tp2 : livePrice <= tp2));
+          const hitTp3 = prevTp3 || (tp3 != null && (isBuy ? livePrice >= tp3 : livePrice <= tp3));
+
+          // Final configured TP
+          const finalTpLevel = tp3 != null ? 3 : tp2 != null ? 2 : 1;
+          const reachedFinalTp =
+            (finalTpLevel === 3 && hitTp3) ||
+            (finalTpLevel === 2 && hitTp2) ||
+            (finalTpLevel === 1 && hitTp1);
+
+          // Check Stop Loss hit (only if final TP was NOT reached)
+          const hitSL = !reachedFinalTp && sl > 0 && (isBuy ? livePrice <= sl : livePrice >= sl);
+
+          if (hitSL) {
+            const lockedLossPips = -estimatePipsAbs(pair, entry, sl);
+            return {
+              event: 'sl_hit',
+              toastText: pair + ' Stop Loss Hit (' + formatPips(lockedLossPips) + ' pips)',
+              toastTone: 'loss',
+              updates: {
+                status: 'Lost',
+                pips: lockedLossPips,
+                hitReason: 'Stop Loss Hit',
+                closedPrice: sl,
+                closedAt: firebase.firestore.FieldValue.serverTimestamp()
+              }
+            };
+          }
+
+          if (reachedFinalTp) {
+            const finalTargetPrice = finalTpLevel === 3 ? tp3 : finalTpLevel === 2 ? tp2 : tp1;
+            const lockedWinPips = estimatePipsAbs(pair, entry, finalTargetPrice);
+            const hitLabel = 'TP' + finalTpLevel + ' Hit';
+            return {
+              event: 'tp_final',
+              toastText: pair + ' ' + hitLabel + ' — Won (' + formatPips(lockedWinPips) + ' pips)',
+              toastTone: 'win',
+              updates: {
+                status: 'Won',
+                tp1Hit: hitTp1,
+                tp2Hit: hitTp2,
+                tp3Hit: hitTp3,
+                pips: lockedWinPips,
+                hitReason: hitLabel,
+                closedPrice: finalTargetPrice,
+                closedAt: firebase.firestore.FieldValue.serverTimestamp()
+              }
+            };
+          }
+
+          // Partial TP hit (e.g. TP1 hit while waiting for TP2/TP3, or TP2 hit while waiting for TP3)
+          if ((hitTp1 && !prevTp1) || (hitTp2 && !prevTp2)) {
+            const highestTpLabel = hitTp2 ? 'TP2' : 'TP1';
+            const highestTpPrice = hitTp2 ? tp2 : tp1;
+            const partialPips = estimatePipsAbs(pair, entry, highestTpPrice);
+            return {
+              event: 'tp_partial',
+              toastText: pair + ' ' + highestTpLabel + ' Hit (' + formatPips(partialPips) + ' pips)',
+              toastTone: 'win',
+              updates: {
+                tp1Hit: hitTp1,
+                tp2Hit: hitTp2,
+                tp3Hit: hitTp3,
+                pips: partialPips,
+                hitReason: highestTpLabel + ' Hit'
+              }
+            };
+          }
+        }
+        return null;
+      }
+
+      function evaluateAutoTriggersForSymbol(sym, livePrice) {
+        if (!state.profile || !db) return;
+
+        // 1. Evaluate user's private journal trades
+        state.trades.forEach(function (t) {
+          if (getPairMeta(t.pair).symbol !== sym) return;
+          if (t.status !== 'Pending' && t.status !== 'Active') return;
+          const lockKey = 'trade:' + t.id;
+          if (state.pendingTriggerLocks[lockKey]) return;
+
+          const transition = computeTriggerTransition(t, livePrice);
+          if (!transition) return;
+
+          state.pendingTriggerLocks[lockKey] = true;
+          const updatePayload = Object.assign({}, transition.updates, {
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          // Optimistically reflect in memory & toast immediately
+          Object.keys(transition.updates).forEach(function (k) {
+            if (k !== 'activatedAt' && k !== 'closedAt') t[k] = transition.updates[k];
+          });
+          showToast(transition.toastText, transition.toastTone);
+          renderAnalysisTab();
+          renderJournalTab();
+          updateTopbarGrowth();
+
+          db.collection('users').doc(state.profile.uid).collection('trades').doc(t.id)
+            .update(updatePayload)
+            .catch(function (err) { console.error('Auto-trigger trade save error:', err); })
+            .finally(function () {
+              setTimeout(function () { delete state.pendingTriggerLocks[lockKey]; }, 2500);
+            });
+        });
+
+        // 2. Evaluate Admin Public Feed signals (Admin persists updates to Firestore; users also see live status)
+        state.posts.forEach(function (post) {
+          if (!post.signal || getPairMeta(post.signal.pair).symbol !== sym) return;
+          const s = post.signal;
+          const st = s.status || 'Active';
+          if (st !== 'Pending' && st !== 'Active') return;
+          const lockKey = 'post:' + post.id;
+          if (state.pendingTriggerLocks[lockKey]) return;
+
+          const transition = computeTriggerTransition(s, livePrice);
+          if (!transition) return;
+
+          state.pendingTriggerLocks[lockKey] = true;
+          const nextSignal = Object.assign({}, s);
+          Object.keys(transition.updates).forEach(function (k) {
+            if (k !== 'activatedAt' && k !== 'closedAt') nextSignal[k] = transition.updates[k];
+          });
+          post.signal = nextSignal;
+          showToast('Public Feed: ' + transition.toastText, transition.toastTone);
+          renderFeedTab();
+
+          if (state.isAdmin) {
+            db.collection('public_posts').doc(post.id)
+              .update({
+                signal: nextSignal,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              })
+              .catch(function (err) { console.error('Auto-trigger public signal save error:', err); })
+              .finally(function () {
+                setTimeout(function () { delete state.pendingTriggerLocks[lockKey]; }, 2500);
+              });
+          } else {
+            setTimeout(function () { delete state.pendingTriggerLocks[lockKey]; }, 4000);
+          }
+        });
+      }
+
+      // ---- Network Connectors for Live Price Engine ----
+      function syncLivePriceEngine() {
+        const pairs = getTrackedPairs();
+        if (pairs.length === 0) {
+          stopPriceStreams();
+          return;
+        }
+
+        // Start Twelve Data WebSocket if API key is provided
+        if (TWELVE_DATA_API_KEY && TWELVE_DATA_API_KEY.trim()) {
+          connectTwelveDataWS(pairs);
+        } else {
+          // Zero-key Binance WebSocket for Crypto & Gold (PAXGUSDT spot proxy)
+          connectBinanceWS(pairs);
+        }
+
+        // Immediate poll + interval loop for all active/pending symbols
+        pollLivePrices(pairs);
+        if (!state.pricePollTimer) {
+          state.pricePollTimer = setInterval(function () {
+            const activePairs = getTrackedPairs();
+            if (activePairs.length > 0) pollLivePrices(activePairs);
+          }, PRICE_POLL_INTERVAL_MS);
+        }
+      }
+
+      function stopPriceStreams() {
+        if (state.pricePollTimer) { clearInterval(state.pricePollTimer); state.pricePollTimer = null; }
+        if (state.twelveWs) { try { state.twelveWs.close(); } catch (e) {} state.twelveWs = null; state.twelveWsSymbols = ''; }
+        if (state.binanceWs) { try { state.binanceWs.close(); } catch (e) {} state.binanceWs = null; state.binanceWsStreams = ''; }
+      }
+
+      function connectTwelveDataWS(pairs) {
+        const tdSyms = pairs.map(function (p) { return getPairMeta(p).twelve; }).sort().join(',');
+        if (!tdSyms) return;
+        if (state.twelveWs && state.twelveWs.readyState <= 1 && state.twelveWsSymbols === tdSyms) return;
+
+        if (state.twelveWs) { try { state.twelveWs.close(); } catch (e) {} }
+        state.twelveWsSymbols = tdSyms;
+
+        try {
+          const ws = new WebSocket('wss://ws.twelvedata.com/v1/quotes/price?apikey=' + encodeURIComponent(TWELVE_DATA_API_KEY.trim()));
+          state.twelveWs = ws;
+          ws.onopen = function () {
+            ws.send(JSON.stringify({ action: 'subscribe', params: { symbols: tdSyms } }));
+          };
+          ws.onmessage = function (ev) {
+            try {
+              const msg = JSON.parse(ev.data);
+              if (msg && msg.event === 'price' && msg.symbol && msg.price) {
+                const normalized = String(msg.symbol).replace('/', '').toUpperCase();
+                ingestLivePrice(normalized, parseFloat(msg.price), 'TwelveData WS');
+              }
+            } catch (e) {}
+          };
+          ws.onerror = function () {};
+          ws.onclose = function () {
+            if (state.twelveWs === ws) { state.twelveWs = null; state.twelveWsSymbols = ''; }
+          };
+        } catch (err) {
+          console.warn('Twelve Data WS fallback to polling:', err);
+        }
+      }
+
+      function connectBinanceWS(pairs) {
+        const streamMap = {};
+        pairs.forEach(function (sym) {
+          if (sym === 'BTCUSD') streamMap['btcusdt@miniTicker'] = 'BTCUSD';
+          else if (sym === 'ETHUSD') streamMap['ethusdt@miniTicker'] = 'ETHUSD';
+          else if (sym === 'XAUUSD') streamMap['paxgusdt@miniTicker'] = 'XAUUSD';
+        });
+        const streams = Object.keys(streamMap).sort().join('/');
+        if (!streams) {
+          if (state.binanceWs) { try { state.binanceWs.close(); } catch (e) {} state.binanceWs = null; state.binanceWsStreams = ''; }
+          return;
+        }
+        if (state.binanceWs && state.binanceWs.readyState <= 1 && state.binanceWsStreams === streams) return;
+
+        if (state.binanceWs) { try { state.binanceWs.close(); } catch (e) {} }
+        state.binanceWsStreams = streams;
+
+        try {
+          const ws = new WebSocket('wss://stream.binance.com:9443/stream?streams=' + streams);
+          state.binanceWs = ws;
+          ws.onmessage = function (ev) {
+            try {
+              const payload = JSON.parse(ev.data);
+              if (payload && payload.stream && payload.data && payload.data.c) {
+                const targetSym = streamMap[payload.stream];
+                if (targetSym) ingestLivePrice(targetSym, parseFloat(payload.data.c), 'Live Stream');
+              }
+            } catch (e) {}
+          };
+          ws.onclose = function () {
+            if (state.binanceWs === ws) { state.binanceWs = null; state.binanceWsStreams = ''; }
+          };
+        } catch (err) {}
+      }
+
+      async function pollLivePrices(pairs) {
+        if (!pairs || pairs.length === 0) return;
+
+        // Path A: Twelve Data REST API (when user configures TWELVE_DATA_API_KEY)
+        if (TWELVE_DATA_API_KEY && TWELVE_DATA_API_KEY.trim()) {
+          try {
+            const tdList = pairs.map(function (p) { return getPairMeta(p).twelve; }).join(',');
+            const url = 'https://api.twelvedata.com/price?symbol=' + encodeURIComponent(tdList) + '&apikey=' + encodeURIComponent(TWELVE_DATA_API_KEY.trim());
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (pairs.length === 1 && data && data.price) {
+              ingestLivePrice(pairs[0], parseFloat(data.price), 'TwelveData');
+              return;
+            } else if (data && typeof data === 'object' && !data.code) {
+              Object.keys(data).forEach(function (k) {
+                if (data[k] && data[k].price) {
+                  ingestLivePrice(k.replace('/', ''), parseFloat(data[k].price), 'TwelveData');
+                }
+              });
+              return;
+            }
+          } catch (err) {
+            console.warn('Twelve Data REST poll fallback:', err);
+          }
+        }
+
+        // Path B: Zero-Key Free Live Market Feeds (Metals, Crypto, Forex)
+        const needGold = pairs.indexOf('XAUUSD') !== -1;
+        const needSilver = pairs.indexOf('XAGUSD') !== -1;
+        const needCrypto = pairs.filter(function (p) { return p === 'BTCUSD' || p === 'ETHUSD'; });
+        const fxPairs = pairs.filter(function (p) { return p !== 'XAUUSD' && p !== 'XAGUSD' && p !== 'BTCUSD' && p !== 'ETHUSD'; });
+
+        const tasks = [];
+
+        if (needGold) {
+          tasks.push(
+            fetch('https://api.gold-api.com/price/XAU')
+              .then(function (r) { return r.json(); })
+              .then(function (d) { if (d && d.price) ingestLivePrice('XAUUSD', d.price, 'Spot XAU'); })
+              .catch(function () {
+                return fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT')
+                  .then(function (r) { return r.json(); })
+                  .then(function (d) { if (d && d.price) ingestLivePrice('XAUUSD', d.price, 'Spot XAU'); })
+                  .catch(function () {});
+              })
+          );
+        }
+
+        if (needSilver) {
+          tasks.push(
+            fetch('https://api.gold-api.com/price/XAG')
+              .then(function (r) { return r.json(); })
+              .then(function (d) { if (d && d.price) ingestLivePrice('XAGUSD', d.price, 'Spot XAG'); })
+              .catch(function () {})
+          );
+        }
+
+        needCrypto.forEach(function (sym) {
+          const bnSym = sym === 'BTCUSD' ? 'BTCUSDT' : 'ETHUSDT';
+          tasks.push(
+            fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + bnSym)
+              .then(function (r) { return r.json(); })
+              .then(function (d) { if (d && d.price) ingestLivePrice(sym, d.price, 'Binance'); })
+              .catch(function () {})
+          );
+        });
+
+        if (fxPairs.length > 0) {
+          tasks.push(
+            fetch('https://open.er-api.com/v6/latest/USD')
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                const rates = d && d.rates;
+                if (!rates) return;
+                fxPairs.forEach(function (sym) {
+                  if (sym.length !== 6) return;
+                  const base = sym.slice(0, 3);
+                  const quote = sym.slice(3, 6);
+                  const rBase = base === 'USD' ? 1 : rates[base];
+                  const rQuote = quote === 'USD' ? 1 : rates[quote];
+                  if (rBase && rQuote) {
+                    const cross = rQuote / rBase;
+                    ingestLivePrice(sym, cross, 'FX Feed');
+                  }
+                });
+              })
+              .catch(function () {})
+          );
+        }
+
+        await Promise.all(tasks);
+      }
+
+      // =====================================================
+      // 6. ANALYTICS & SMART GUIDANCE ENGINE
       // =====================================================
       function computeAnalytics() {
         const trades = state.trades;
@@ -1239,7 +1900,7 @@
           guidance.push({
             tone: 'info',
             title: 'Start your verified track record',
-            message: 'Log your first setup in My Journal with Entry, Stop Loss, and Take Profit levels to unlock live Win Rate, Drawdown, and Profit Factor analytics.'
+            message: 'Log your first setup in My Journal with Entry, Stop Loss, and Take Profit levels. The live engine will auto-track activation, TP1/TP2/TP3, and SL hits.'
           });
         } else {
           if (closedTrades < 5) {
@@ -1311,9 +1972,9 @@
           growthPercent: growthPercent,
           maxDrawdownPercent: maxDD,
           totalLots: totalLots,
-          netPips: netPips,
-          grossWinPips: grossWinPips,
-          grossLossPips: grossLossPips,
+          netPips: Number(netPips.toFixed(1)),
+          grossWinPips: Number(grossWinPips.toFixed(1)),
+          grossLossPips: Number(grossLossPips.toFixed(1)),
           avgRiskReward: avgRR,
           recordDays: recordDays,
           lastUpdatedMs: lastUpdated,
@@ -1324,7 +1985,7 @@
       }
 
       // =====================================================
-      // 5. AUTH UI & HANDLERS
+      // 7. AUTH UI & HANDLERS
       // =====================================================
       function showView(name) {
         document.getElementById('view-auth').classList.toggle('hidden', name !== 'auth');
@@ -1431,6 +2092,7 @@
 
       window.handleSignOut = async function () {
         cleanupSubscriptions();
+        stopPriceStreams();
         state.user = null;
         state.profile = null;
         state.isAdmin = false;
@@ -1445,7 +2107,7 @@
       };
 
       // =====================================================
-      // 6. FIRESTORE SUBSCRIPTIONS & USER PROFILE SYNC
+      // 8. FIRESTORE SUBSCRIPTIONS & USER PROFILE SYNC
       // =====================================================
       function cleanupSubscriptions() {
         ['unsubProfile', 'unsubTrades', 'unsubPosts', 'unsubUsers'].forEach(function (k) {
@@ -1521,6 +2183,12 @@
               tp1: Number(d.tp1 || 0),
               tp2: (d.tp2 !== undefined && d.tp2 !== null && d.tp2 !== '') ? Number(d.tp2) : null,
               tp3: (d.tp3 !== undefined && d.tp3 !== null && d.tp3 !== '') ? Number(d.tp3) : null,
+              tp1Hit: Boolean(d.tp1Hit),
+              tp2Hit: Boolean(d.tp2Hit),
+              tp3Hit: Boolean(d.tp3Hit),
+              hitReason: typeof d.hitReason === 'string' ? d.hitReason : '',
+              triggeredPrice: d.triggeredPrice != null ? Number(d.triggeredPrice) : null,
+              closedPrice: d.closedPrice != null ? Number(d.closedPrice) : null,
               lotSize: Number(d.lotSize || 0.01),
               status: d.status || 'Pending',
               pips: Number(d.pips || 0),
@@ -1534,6 +2202,7 @@
           renderAnalysisTab();
           renderJournalTab();
           updateTopbarGrowth();
+          syncLivePriceEngine();
         }
 
         state.unsubTrades = tradesCol.orderBy('createdAt', 'desc').limit(250).onSnapshot(
@@ -1567,6 +2236,7 @@
           list.sort(function (a, b) { return getTsMs(b.createdAt) - getTsMs(a.createdAt); });
           state.posts = list;
           renderFeedTab();
+          syncLivePriceEngine();
         }
 
         state.unsubPosts = postsCol.orderBy('createdAt', 'desc').limit(100).onSnapshot(
@@ -1609,6 +2279,7 @@
       if (firebaseReady && auth) {
         auth.onAuthStateChanged(async function (user) {
           cleanupSubscriptions();
+          stopPriceStreams();
           state.user = user;
 
           if (!user) {
@@ -1621,7 +2292,6 @@
           const initialProfile = await ensureUserProfile(user);
           applyProfile(initialProfile);
 
-          // Real-time listener on own profile to immediately enforce admin blocking
           state.unsubProfile = db.collection('users').doc(user.uid).onSnapshot(function (snap) {
             if (!snap.exists) return;
             const d = snap.data() || {};
@@ -1645,6 +2315,7 @@
         const blocked = Boolean(profile.isBlocked && !state.isAdmin);
 
         if (blocked) {
+          stopPriceStreams();
           if (state.unsubTrades) { state.unsubTrades(); state.unsubTrades = null; }
           if (state.unsubPosts) { state.unsubPosts(); state.unsubPosts = null; }
           if (state.unsubUsers) { state.unsubUsers(); state.unsubUsers = null; }
@@ -1653,7 +2324,6 @@
           return;
         }
 
-        // Active user -> show App Shell
         document.getElementById('sidebar-user-name').textContent = profile.displayName;
         document.getElementById('sidebar-user-email').textContent = profile.email;
         document.getElementById('sidebar-role-label').textContent = state.isAdmin ? 'Administrator Mode' : 'Private Vault';
@@ -1673,7 +2343,7 @@
       }
 
       // =====================================================
-      // 7. NAVIGATION (5 TABS: MOBILE BOTTOM + DESKTOP SIDEBAR)
+      // 9. NAVIGATION (5 TABS: MOBILE BOTTOM + DESKTOP SIDEBAR)
       // =====================================================
       const ICONS = {
         analysis: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
@@ -1737,7 +2407,99 @@
       };
 
       // =====================================================
-      // 8. TAB 1 — ACCOUNT ANALYSIS
+      // 10. SHARED SIGNAL CARD LIVE PRICE & TARGET RENDERERS
+      // =====================================================
+      function renderLivePriceStrip(sig, domKey) {
+        const status = sig.status || 'Active';
+        const sym = getPairMeta(sig.pair).symbol;
+        const quoteObj = state.livePrices[sym];
+        const liveVal = quoteObj ? quoteObj.price : null;
+        const formattedPrice = liveVal != null ? formatPrice(sym, liveVal) : 'Connecting...';
+
+        if (status === 'Lost') {
+          const lossLabel = sig.hitReason || 'Stop Loss Hit';
+          return '<div class="tr-banner-sl">' +
+            '<span>&#10005; ' + esc(lossLabel.toUpperCase()) + '</span>' +
+            '<span class="tr-mono">' + formatPips(-Math.abs(sig.pips || 0)) + ' pips</span>' +
+          '</div>';
+        }
+
+        if (status === 'Won') {
+          const winLabel = sig.hitReason || 'Take Profit Hit';
+          return '<div class="tr-banner-tp">' +
+            '<span>&#10003; ' + esc(winLabel.toUpperCase()) + ' &middot; WON</span>' +
+            '<span class="tr-mono">' + formatPips(Math.abs(sig.pips || 0)) + ' pips</span>' +
+          '</div>';
+        }
+
+        let rightText = 'Waiting for price...';
+        let rightColor = 'var(--tr-muted)';
+        if (liveVal != null) {
+          if (status === 'Active') {
+            const fp = calcSignedPips(sig.pair, sig.type, sig.entryPrice, liveVal);
+            rightText = formatPips(fp) + ' pips';
+            rightColor = fp > 0 ? 'var(--tr-buy)' : fp < 0 ? 'var(--tr-sell)' : 'var(--tr-text-secondary)';
+          } else if (status === 'Pending') {
+            const dist = estimatePipsAbs(sig.pair, liveVal, sig.entryPrice);
+            rightText = dist.toFixed(1) + ' pips to entry';
+            rightColor = '#FCD34D';
+          }
+        }
+
+        let partialBanner = '';
+        if (status === 'Active' && (sig.tp1Hit || sig.tp2Hit)) {
+          const hitText = sig.tp2Hit ? 'TP2 HIT' : 'TP1 HIT';
+          const nextText = sig.tp2Hit ? 'Running to TP3' : (sig.tp2 != null ? 'Running to TP2' : '');
+          partialBanner =
+            '<div class="tr-banner-tp" style="margin-top:8px;padding:7px 11px;font-size:12px;">' +
+              '<span>&#10003; ' + hitText + (nextText ? ' &middot; ' + nextText : '') + '</span>' +
+              '<span class="tr-mono">' + formatPips(Math.abs(sig.pips || 0)) + ' pips locked</span>' +
+            '</div>';
+        }
+
+        return '<div class="tr-live-bar">' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<span style="font-size:10.5px;font-weight:700;letter-spacing:0.04em;color:' + (status === 'Active' ? '#6EE7B7' : '#FCD34D') + ';">' +
+              (status === 'Active' ? 'LIVE' : 'WATCHING') +
+            '</span>' +
+            '<span class="tr-live-price" data-live-price="' + esc(sym) + '">' + esc(formattedPrice) + '</span>' +
+          '</div>' +
+          '<span class="tr-mono" data-live-pips="' + esc(domKey) + '" style="font-size:12.5px;font-weight:700;color:' + rightColor + ';">' + esc(rightText) + '</span>' +
+        '</div>' + partialBanner;
+      }
+
+      function renderPriceLevelsGrid(sig) {
+        const isLost = sig.status === 'Lost';
+        const tp1Hit = Boolean(sig.tp1Hit) || (sig.status === 'Won' && !sig.tp2 && !sig.tp3);
+        const tp2Hit = Boolean(sig.tp2Hit);
+        const tp3Hit = Boolean(sig.tp3Hit);
+
+        return '<div class="tr-price-grid">' +
+          '<div class="tr-price-cell">' +
+            '<span style="font-size:10px;font-weight:700;color:var(--tr-muted);">ENTRY</span>' +
+            '<span class="tr-mono" style="font-size:13.5px;font-weight:700;">' + formatPrice(sig.pair, sig.entryPrice) + '</span>' +
+          '</div>' +
+          '<div class="tr-price-cell ' + (isLost ? 'sl-hit' : '') + '" style="' + (isLost ? '' : 'border-color:rgba(239,68,68,0.28);') + '">' +
+            '<span style="font-size:10px;font-weight:700;color:#FCA5A5;">SL' + (isLost ? ' &#10005;' : '') + '</span>' +
+            '<span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#FCA5A5;">' + formatPrice(sig.pair, sig.stopLoss) + '</span>' +
+          '</div>' +
+          '<div class="tr-price-cell ' + (tp1Hit ? 'tp-hit' : '') + '" style="' + (tp1Hit ? '' : 'border-color:rgba(16,185,129,0.28);') + '">' +
+            '<span style="font-size:10px;font-weight:700;color:#6EE7B7;">TP1' + (tp1Hit ? ' &#10003;' : '') + '</span>' +
+            '<span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#6EE7B7;">' + formatPrice(sig.pair, sig.tp1) + '</span>' +
+          '</div>' +
+          '<div class="tr-price-cell ' + (tp2Hit ? 'tp-hit' : '') + '">' +
+            '<span style="font-size:10px;font-weight:700;color:' + (tp2Hit ? '#6EE7B7' : 'var(--tr-muted)') + ';">TP2' + (tp2Hit ? ' &#10003;' : '') + '</span>' +
+            '<span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (sig.tp2 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (sig.tp2 != null ? formatPrice(sig.pair, sig.tp2) : '&mdash;') + '</span>' +
+          '</div>' +
+          '<div class="tr-price-cell ' + (tp3Hit ? 'tp-hit' : '') + '">' +
+            '<span style="font-size:10px;font-weight:700;color:' + (tp3Hit ? '#6EE7B7' : 'var(--tr-muted)') + ';">TP3' + (tp3Hit ? ' &#10003;' : '') + '</span>' +
+            '<span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (sig.tp3 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (sig.tp3 != null ? formatPrice(sig.pair, sig.tp3) : '&mdash;') + '</span>' +
+          '</div>' +
+        '</div>';
+      }
+
+      // =====================================================
+      // 11. TAB 1 — ACCOUNT ANALYSIS
       // =====================================================
       function buildSparklineSVG(points, positive) {
         const pts = points.length >= 2 ? points : [points[0] || 10000, points[0] || 10000];
@@ -1773,12 +2535,12 @@
 
         const guidanceHTML = a.guidance.map(function (g) {
           const styles = g.tone === 'positive'
-            ? { bg: 'var(--tr-buy-soft)', bd: 'var(--tr-buy-border)', col: '#6EE7B7' }
+            ? { bg: 'var(--tr-buy-soft)', bd: 'var(--tr-buy-border)' }
             : g.tone === 'danger'
-            ? { bg: 'var(--tr-sell-soft)', bd: 'var(--tr-sell-border)', col: '#FCA5A5' }
+            ? { bg: 'var(--tr-sell-soft)', bd: 'var(--tr-sell-border)' }
             : g.tone === 'warning'
-            ? { bg: 'var(--tr-amber-soft)', bd: 'var(--tr-amber-border)', col: '#FCD34D' }
-            : { bg: 'var(--tr-blue-soft)', bd: 'rgba(56,189,248,0.3)', col: '#7DD3FC' };
+            ? { bg: 'var(--tr-amber-soft)', bd: 'var(--tr-amber-border)' }
+            : { bg: 'var(--tr-blue-soft)', bd: 'rgba(56,189,248,0.3)' };
 
           return '<div style="padding:12px 14px;border-radius:12px;background:' + styles.bg + ';border:1px solid ' + styles.bd + ';">' +
             '<div style="font-size:13.5px;font-weight:700;color:#F8FAFC;">' + esc(g.title) + '</div>' +
@@ -1786,7 +2548,6 @@
         }).join('');
 
         document.getElementById('tab-analysis').innerHTML =
-          // Account Header Card
           '<div class="tr-card" style="padding:20px;">' +
             '<div class="tr-flex-between">' +
               '<div style="display:flex;align-items:center;gap:14px;min-width:0;">' +
@@ -1815,7 +2576,7 @@
                 '<div style="text-align:right;">' +
                   '<div style="font-size:12px;color:var(--tr-muted);font-weight:600;">Estimated Equity</div>' +
                   '<div class="tr-mono" style="font-size:18px;font-weight:700;color:#F8FAFC;margin-top:2px;">$' + a.currentEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>' +
-                  '<div class="tr-mono" style="font-size:12px;color:' + (a.netPips >= 0 ? '#6EE7B7' : '#FCA5A5') + ';">' + (a.netPips >= 0 ? '+' : '') + a.netPips + ' net pips</div>' +
+                  '<div class="tr-mono" style="font-size:12px;color:' + (a.netPips >= 0 ? '#6EE7B7' : '#FCA5A5') + ';">' + formatPips(a.netPips) + ' net pips</div>' +
                 '</div>' +
               '</div>' +
               '<div style="border-radius:12px;overflow:hidden;background:rgba(11,15,23,0.75);border:1px solid var(--tr-border);padding:8px 6px 0;">' +
@@ -1824,7 +2585,6 @@
             '</div>' +
           '</div>' +
 
-          // Smart Rule-Based Guidance Box
           '<div class="tr-card">' +
             '<div class="tr-flex-between" style="margin-bottom:12px;">' +
               '<div style="font-size:14px;font-weight:800;color:#F8FAFC;">Desk Discipline Guidance</div>' +
@@ -1833,7 +2593,6 @@
             '<div style="display:flex;flex-direction:column;gap:10px;">' + guidanceHTML + '</div>' +
           '</div>' +
 
-          // Stat Cards Grid
           '<div class="tr-stats-grid">' +
             statCard('Growth %', (pos ? '+' : '') + a.growthPercent.toFixed(2) + '%', a.closedTrades + ' closed trades', pos ? 'var(--tr-buy)' : 'var(--tr-sell)') +
             statCard('Max Drawdown', '-' + a.maxDrawdownPercent.toFixed(2) + '%', 'Peak-to-trough', a.maxDrawdownPercent > 8 ? 'var(--tr-sell)' : '#F8FAFC') +
@@ -1844,7 +2603,7 @@
             '<div class="tr-card" style="grid-column:span 2;">' +
               '<div class="tr-flex-between" style="font-size:12px;font-weight:600;color:var(--tr-muted);">' +
                 '<span>Wins vs. Stop Losses (SL)</span>' +
-                '<span class="tr-mono" style="color:var(--tr-text-secondary);">+' + a.grossWinPips + ' / -' + a.grossLossPips + ' pips</span>' +
+                '<span class="tr-mono" style="color:var(--tr-text-secondary);">+' + a.grossWinPips.toFixed(1) + ' / -' + a.grossLossPips.toFixed(1) + ' pips</span>' +
               '</div>' +
               '<div class="tr-flex-between" style="margin:10px 0;">' +
                 '<div style="display:flex;align-items:baseline;gap:8px;"><span class="tr-mono" style="font-size:24px;font-weight:800;color:var(--tr-buy);">' + a.wins + '</span><span style="font-size:12.5px;font-weight:600;color:#6EE7B7;">Wins (' + winShare + '%)</span></div>' +
@@ -1867,7 +2626,7 @@
       }
 
       // =====================================================
-      // 9. TAB 2 — PRIVATE TRADING JOURNAL & SIGNALS
+      // 12. TAB 2 — PRIVATE TRADING JOURNAL & SIGNALS
       // =====================================================
       function renderJournalTab() {
         const container = document.getElementById('tab-journal');
@@ -1887,18 +2646,19 @@
           cardsHTML =
             '<div class="tr-card" style="text-align:center;padding:44px 20px;">' +
               '<div style="font-size:16px;font-weight:700;color:#F8FAFC;">' + (state.trades.length === 0 ? 'No trades logged yet' : 'No trades match your filter') + '</div>' +
-              '<p style="font-size:13px;color:var(--tr-muted);margin:6px auto 18px;max-width:340px;">' +
+              '<p style="font-size:13px;color:var(--tr-muted);margin:6px auto 18px;max-width:360px;">' +
                 (state.trades.length === 0
-                  ? 'Tap the + button to record your first BUY or SELL setup with Entry, SL, and TP targets.'
+                  ? 'Tap + to log a live price-linked signal. Pending limit/stop orders automatically activate and trigger TP1/TP2/TP3 or SL.'
                   : 'Try switching the status filter or clearing your search query.') +
               '</p>' +
               (state.trades.length === 0 ? '<button type="button" class="tr-btn tr-btn-primary tr-press" onclick="openTradeModal()">+ Log First Setup</button>' : '') +
             '</div>';
         } else {
           cardsHTML = '<div class="tr-signals-grid">' + filtered.map(function (t) {
-            const isBuy = String(t.type).indexOf('BUY') === 0;
+            const isBuy = isBuyDirection(t.type);
             const rr = t.riskReward > 0 ? t.riskReward : calcRR(t.entryPrice, t.stopLoss, t.tp1, t.type);
             const chartOpen = Boolean(state.expandedCharts[t.id]);
+            const statusText = t.status === 'Lost' ? 'Lost (SL Hit)' : t.status === 'Won' ? ('Won' + (t.hitReason ? ' · ' + t.hitReason : '')) : t.status;
             const stStyle = t.status === 'Won'
               ? 'background:var(--tr-buy-soft);border:1px solid var(--tr-buy-border);color:#6EE7B7;'
               : t.status === 'Lost'
@@ -1913,22 +2673,20 @@
               : '<button type="button" class="tr-btn tr-btn-sm tr-press" onclick="openTradeModal(\'' + esc(t.id) + '\')">Edit</button>' +
                 '<button type="button" class="tr-btn tr-btn-sm tr-press" style="color:#FCA5A5;" onclick="askDeleteTrade(\'' + esc(t.id) + '\')">Delete</button>';
 
-            return '<article class="tr-card tr-stack">' +
+            return '<article class="tr-card tr-stack" style="' + (t.status === 'Lost' ? 'border-color:rgba(239,68,68,0.34);' : t.status === 'Won' ? 'border-color:rgba(16,185,129,0.34);' : '') + '">' +
               '<div class="tr-flex-between">' +
                 '<div style="display:flex;align-items:center;gap:10px;">' +
                   '<span class="tr-mono" style="font-size:16px;font-weight:800;color:#F8FAFC;">' + esc(t.pair) + '</span>' +
                   '<span class="tr-badge" style="background:' + (isBuy ? 'var(--tr-buy-soft)' : 'var(--tr-sell-soft)') + ';border:1px solid ' + (isBuy ? 'var(--tr-buy-border)' : 'var(--tr-sell-border)') + ';color:' + (isBuy ? '#6EE7B7' : '#FCA5A5') + ';">' + esc(t.type) + '</span>' +
                 '</div>' +
-                '<span class="tr-pill" style="' + stStyle + '">' + esc(t.status) + '</span>' +
+                '<span class="tr-pill" style="' + stStyle + '">' + esc(statusText) + '</span>' +
               '</div>' +
 
-              '<div class="tr-price-grid">' +
-                '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">ENTRY</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;">' + t.entryPrice + '</span></div>' +
-                '<div class="tr-price-cell" style="border-color:rgba(239,68,68,0.28);"><span style="font-size:10px;font-weight:700;color:#FCA5A5;">SL</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#FCA5A5;">' + t.stopLoss + '</span></div>' +
-                '<div class="tr-price-cell" style="border-color:rgba(16,185,129,0.28);"><span style="font-size:10px;font-weight:700;color:#6EE7B7;">TP1</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#6EE7B7;">' + t.tp1 + '</span></div>' +
-                '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">TP2</span><span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (t.tp2 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (t.tp2 != null ? t.tp2 : '&mdash;') + '</span></div>' +
-                '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">TP3</span><span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (t.tp3 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (t.tp3 != null ? t.tp3 : '&mdash;') + '</span></div>' +
-              '</div>' +
+              // Live Price Ticker Bar or Result Banner
+              renderLivePriceStrip(t, 'trade:' + t.id) +
+
+              // Entry / SL / TP1-TP3 Grid with Hit Checkmarks
+              renderPriceLevelsGrid(t) +
 
               '<div class="tr-flex-between" style="font-size:12.5px;color:var(--tr-muted);">' +
                 '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">' +
@@ -1936,7 +2694,7 @@
                   '<span>&middot;</span>' +
                   '<span>R:R <strong class="tr-mono" style="color:#F8FAFC;">1:' + rr.toFixed(2) + '</strong></span>' +
                   '<span>&middot;</span>' +
-                  '<span class="tr-mono" style="font-weight:700;color:' + (t.pips > 0 ? 'var(--tr-buy)' : t.pips < 0 ? 'var(--tr-sell)' : 'var(--tr-text-secondary)') + ';">' + (t.pips > 0 ? '+' + t.pips : t.pips) + ' pips</span>' +
+                  '<span class="tr-mono" style="font-weight:700;color:' + (t.pips > 0 ? 'var(--tr-buy)' : t.pips < 0 ? 'var(--tr-sell)' : 'var(--tr-text-secondary)') + ';">' + formatPips(t.pips) + ' pips</span>' +
                 '</div>' +
                 '<span style="font-size:11.5px;">' + esc(formatShortTime(t.createdAt)) + '</span>' +
               '</div>' +
@@ -1961,7 +2719,7 @@
           '<div class="tr-flex-between">' +
             '<div>' +
               '<h1 style="margin:0;font-size:20px;font-weight:800;color:#F8FAFC;">Private Trading Journal</h1>' +
-              '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">' + state.trades.length + ' private signal' + (state.trades.length === 1 ? '' : 's') + ' &middot; Visible only to your account</div>' +
+              '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">' + state.trades.length + ' private signal' + (state.trades.length === 1 ? '' : 's') + ' &middot; Live auto-execution enabled</div>' +
             '</div>' +
             '<button type="button" class="tr-btn tr-btn-primary tr-btn-sm tr-press" onclick="openTradeModal()">+ New Signal</button>' +
           '</div>' +
@@ -1982,7 +2740,6 @@
           });
         }
 
-        // Mount expanded TradingView mini-charts
         filtered.forEach(function (t) {
           if (state.expandedCharts[t.id]) {
             mountMiniChart('mini-chart-' + t.id, t.pair);
@@ -2001,7 +2758,7 @@
         s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
         s.async = true;
         s.innerHTML = JSON.stringify({
-          symbol: toTVSymbol(pair),
+          symbol: getPairMeta(pair).tvSymbol,
           width: '100%',
           height: 210,
           locale: 'en',
@@ -2023,19 +2780,23 @@
         if (!state.profile || !db) return;
         const t = state.trades.find(function (x) { return x.id === tradeId; });
         if (!t) return;
-        let nextPips = t.pips;
-        if (nextStatus === 'Won' && (!nextPips || nextPips <= 0)) {
-          nextPips = estimatePips(t.pair, t.entryPrice, t.tp1);
+        const update = {
+          status: nextStatus,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (nextStatus === 'Won') {
+          const finalTp = t.tp3 || t.tp2 || t.tp1;
+          update.pips = estimatePipsAbs(t.pair, t.entryPrice, finalTp);
+          update.tp1Hit = true;
+          if (t.tp2 != null) update.tp2Hit = true;
+          if (t.tp3 != null) update.tp3Hit = true;
+          update.hitReason = t.tp3 != null ? 'TP3 Hit' : t.tp2 != null ? 'TP2 Hit' : 'TP1 Hit';
         } else if (nextStatus === 'Lost') {
-          const slP = estimatePips(t.pair, t.entryPrice, t.stopLoss);
-          nextPips = slP > 0 ? -slP : -Math.abs(nextPips || 0);
+          update.pips = -estimatePipsAbs(t.pair, t.entryPrice, t.stopLoss);
+          update.hitReason = 'Stop Loss Hit';
         }
         try {
-          await db.collection('users').doc(state.profile.uid).collection('trades').doc(tradeId).update({
-            status: nextStatus,
-            pips: nextPips,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
+          await db.collection('users').doc(state.profile.uid).collection('trades').doc(tradeId).update(update);
         } catch (err) { console.error(err); }
       };
 
@@ -2047,21 +2808,12 @@
         } catch (err) { console.error(err); }
       };
 
-      // Trade Modal Logic
-      function renderTradeModalControls() {
-        const currentPair = document.getElementById('tf-pair').value.trim().toUpperCase();
-        document.getElementById('tf-pair-presets').innerHTML = POPULAR_PAIRS.map(function (p) {
-          const active = p === currentPair;
-          return '<button type="button" class="tr-seg-btn tr-mono tr-press" style="min-height:32px;padding:4px 10px;border:1px solid ' +
-            (active ? 'var(--tr-buy-border)' : 'var(--tr-border)') + ';background:' +
-            (active ? 'var(--tr-buy-soft)' : 'rgba(11,15,23,0.7)') + ';color:' +
-            (active ? '#6EE7B7' : 'var(--tr-muted)') + ';" onclick="selectTradePair(\'' + p + '\')">' + p + '</button>';
-        }).join('');
-
+      // ---- Trade Modal Logic ----
+      function renderTradeModalDirections() {
         document.getElementById('tf-dir-buttons').innerHTML = DIRECTIONS.map(function (d) {
           const active = state.tradeFormDirection === d;
-          const isBuy = d.indexOf('BUY') === 0;
-          return '<button type="button" class="tr-btn tr-btn-sm tr-press" style="border-color:' +
+          const isBuy = isBuyDirection(d);
+          return '<button type="button" class="tr-btn tr-btn-sm tr-press" style="padding:7px 8px;font-size:11.5px;border-color:' +
             (active ? (isBuy ? 'var(--tr-buy-border)' : 'var(--tr-sell-border)') : 'var(--tr-border)') + ';background:' +
             (active ? (isBuy ? 'var(--tr-buy-soft)' : 'var(--tr-sell-soft)') : 'rgba(11,15,23,0.7)') + ';color:' +
             (active ? (isBuy ? '#6EE7B7' : '#FCA5A5') : 'var(--tr-muted)') + ';" onclick="selectTradeDirection(\'' + d + '\')">' + d + '</button>';
@@ -2074,32 +2826,35 @@
         const sl = parseFloat(document.getElementById('tf-sl').value);
         const tp1 = parseFloat(document.getElementById('tf-tp1').value);
         const rr = calcRR(entry, sl, tp1, state.tradeFormDirection);
-        const slP = estimatePips(pair, entry, sl);
-        const tpP = estimatePips(pair, entry, tp1);
+        const slP = estimatePipsAbs(pair, entry, sl);
+        const tpP = estimatePipsAbs(pair, entry, tp1);
 
         const rrEl = document.getElementById('tf-rr-preview');
         rrEl.textContent = rr > 0 ? ('1 : ' + rr.toFixed(2)) : '\u2014';
         rrEl.style.color = rr >= 2 ? 'var(--tr-buy)' : rr > 0 ? 'var(--tr-amber)' : 'var(--tr-muted)';
-        document.getElementById('tf-sl-pips').textContent = 'SL risk: ' + slP + ' pips';
-        document.getElementById('tf-tp-pips').textContent = 'TP1 reward: +' + tpP + ' pips';
+        document.getElementById('tf-sl-pips').textContent = 'SL risk: ' + slP.toFixed(1) + ' pips';
+        document.getElementById('tf-tp-pips').textContent = 'TP1 reward: +' + tpP.toFixed(1) + ' pips';
+
+        const qObj = state.livePrices[getPairMeta(pair).symbol];
+        document.getElementById('tf-live-quote').textContent = qObj ? ('Live: ' + formatPrice(pair, qObj.price)) : '';
       }
 
-      window.selectTradePair = function (p) {
-        document.getElementById('tf-pair').value = p;
-        renderTradeModalControls();
-        updateTradeRRPreview();
-      };
       window.selectTradeDirection = function (d) {
         state.tradeFormDirection = d;
-        renderTradeModalControls();
+        if (!state.editingTradeId) {
+          document.getElementById('tf-status').value = isPendingOrderType(d) ? 'Pending' : 'Active';
+        }
+        renderTradeModalDirections();
         updateTradeRRPreview();
       };
 
-      ['tf-pair', 'tf-entry', 'tf-sl', 'tf-tp1'].forEach(function (id) {
-        document.getElementById(id).addEventListener('input', function () {
-          if (id === 'tf-pair') renderTradeModalControls();
-          updateTradeRRPreview();
-        });
+      document.getElementById('tf-pair').addEventListener('change', function () {
+        updateTradeRRPreview();
+        pollLivePrices([document.getElementById('tf-pair').value]);
+      });
+
+      ['tf-entry', 'tf-sl', 'tf-tp1'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', updateTradeRRPreview);
       });
 
       document.getElementById('tf-status').addEventListener('change', function (e) {
@@ -2109,10 +2864,10 @@
         const sl = parseFloat(document.getElementById('tf-sl').value);
         const tp1 = parseFloat(document.getElementById('tf-tp1').value);
         if (st === 'Won') {
-          const tpP = estimatePips(pair, entry, tp1);
+          const tpP = estimatePipsAbs(pair, entry, tp1);
           if (tpP > 0) document.getElementById('tf-pips').value = String(tpP);
         } else if (st === 'Lost') {
-          const slP = estimatePips(pair, entry, sl);
+          const slP = estimatePipsAbs(pair, entry, sl);
           if (slP > 0) document.getElementById('tf-pips').value = String(-slP);
         }
       });
@@ -2127,7 +2882,7 @@
           if (t) {
             document.getElementById('trade-modal-title').textContent = 'Edit Trade Signal';
             document.getElementById('tf-save-btn').textContent = 'Save Changes';
-            document.getElementById('tf-pair').value = t.pair;
+            document.getElementById('tf-pair').value = getPairMeta(t.pair).symbol;
             state.tradeFormDirection = t.type;
             document.getElementById('tf-entry').value = t.entryPrice;
             document.getElementById('tf-sl').value = t.stopLoss;
@@ -2155,9 +2910,10 @@
           document.getElementById('tf-notes').value = '';
         }
 
-        renderTradeModalControls();
+        renderTradeModalDirections();
         updateTradeRRPreview();
         document.getElementById('trade-modal').classList.remove('hidden');
+        pollLivePrices([document.getElementById('tf-pair').value]);
       };
 
       window.closeTradeModal = function () {
@@ -2194,8 +2950,8 @@
           return;
         }
         if (isNaN(pips)) pips = 0;
-        if (status === 'Won' && pips === 0) pips = estimatePips(pair, entryPrice, tp1);
-        else if (status === 'Lost' && pips === 0) pips = -estimatePips(pair, entryPrice, stopLoss);
+        if (status === 'Won' && pips === 0) pips = estimatePipsAbs(pair, entryPrice, tp3 || tp2 || tp1);
+        else if (status === 'Lost' && pips === 0) pips = -estimatePipsAbs(pair, entryPrice, stopLoss);
         else if (status === 'Lost' && pips > 0) pips = -Math.abs(pips);
 
         const riskReward = calcRR(entryPrice, stopLoss, tp1, state.tradeFormDirection);
@@ -2217,6 +2973,10 @@
           pips: pips,
           riskReward: riskReward,
           notes: notes,
+          tp1Hit: status === 'Won',
+          tp2Hit: status === 'Won' && tp2 != null,
+          tp3Hit: status === 'Won' && tp3 != null,
+          hitReason: status === 'Lost' ? 'Stop Loss Hit' : status === 'Won' ? (tp3 != null ? 'TP3 Hit' : tp2 != null ? 'TP2 Hit' : 'TP1 Hit') : '',
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -2239,7 +2999,7 @@
       });
 
       // =====================================================
-      // 10. TAB 3 — LIVE MARKET PRICES (TRADINGVIEW)
+      // 13. TAB 3 — LIVE MARKET PRICES (TRADINGVIEW)
       // =====================================================
       function renderMarketTab() {
         state.marketMounted = true;
@@ -2270,7 +3030,6 @@
           '<div class="tr-scroll-x" style="display:flex;gap:8px;padding-bottom:2px;">' + pairButtons + '</div>' +
           '<div id="tv-chart-slot" class="tradingview-widget-container" style="width:100%;height:540px;border-radius:14px;overflow:hidden;border:1px solid var(--tr-border);background:#0B0F17;"></div>';
 
-        // Mount TradingView Ticker Tape
         const tickerEl = document.getElementById('tv-ticker-slot');
         const tickerWidget = document.createElement('div');
         tickerWidget.className = 'tradingview-widget-container__widget';
@@ -2297,7 +3056,6 @@
         });
         tickerEl.appendChild(tickerScript);
 
-        // Mount TradingView Advanced Chart
         mountAdvancedChart();
       }
 
@@ -2335,7 +3093,7 @@
       window.setMarketInterval = function (iv) { state.marketInterval = iv; renderMarketTab(); };
 
       // =====================================================
-      // 11. TAB 4 — ADMIN PUBLIC BROADCAST FEED
+      // 14. TAB 4 — ADMIN PUBLIC BROADCAST FEED
       // =====================================================
       function renderFeedTab() {
         const container = document.getElementById('tab-feed');
@@ -2350,14 +3108,15 @@
               '<div style="font-size:16px;font-weight:700;color:#F8FAFC;">No broadcasts yet</div>' +
               '<p style="font-size:13px;color:var(--tr-muted);margin:6px auto 0;max-width:340px;">' +
                 (state.isAdmin
-                  ? 'Publish announcements, chart images, video breakdowns, or public signals using the New Post button.'
+                  ? 'Publish announcements, chart images, video breakdowns, or live-tracked public signals using the New Post button.'
                   : 'Desk announcements and public setups posted by the administrator will appear here in real time.') +
               '</p></div>';
         } else {
           listHTML = '<div class="tr-stack" style="max-width:820px;">' + state.posts.map(function (post) {
             const vid = getEmbedVideo(post.videoUrl);
             const sig = post.signal;
-            const isBuy = sig && String(sig.type).indexOf('BUY') === 0;
+            const isBuy = sig && isBuyDirection(sig.type);
+            const sigStatus = sig ? (sig.status || 'Active') : '';
 
             const adminControls = state.isAdmin
               ? (state.confirmDeletePostId === post.id
@@ -2365,22 +3124,26 @@
                 : '<button type="button" class="tr-btn tr-btn-sm tr-press" style="color:#FCA5A5;" onclick="askDeletePost(\'' + esc(post.id) + '\')">Delete</button>')
               : '';
 
+            const sigStatusStyle = sigStatus === 'Won'
+              ? 'background:var(--tr-buy-soft);border:1px solid var(--tr-buy-border);color:#6EE7B7;'
+              : sigStatus === 'Lost'
+              ? 'background:var(--tr-sell-soft);border:1px solid var(--tr-sell-border);color:#FCA5A5;'
+              : sigStatus === 'Pending'
+              ? 'background:var(--tr-amber-soft);border:1px solid var(--tr-amber-border);color:#FCD34D;'
+              : 'background:var(--tr-blue-soft);border:1px solid rgba(56,189,248,0.34);color:#7DD3FC;';
+
             const sigHTML = sig
-              ? '<div style="padding:14px;border-radius:14px;background:rgba(11,15,23,0.8);border:1px solid ' + (isBuy ? 'var(--tr-buy-border)' : 'var(--tr-sell-border)') + ';display:flex;flex-direction:column;gap:12px;">' +
+              ? '<div style="padding:14px;border-radius:14px;background:rgba(11,15,23,0.82);border:1px solid ' + (sigStatus === 'Lost' ? 'var(--tr-sell-border)' : isBuy ? 'var(--tr-buy-border)' : 'var(--tr-sell-border)') + ';display:flex;flex-direction:column;gap:12px;">' +
                   '<div class="tr-flex-between">' +
-                    '<div style="display:flex;align-items:center;gap:8px;">' +
+                    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
                       '<span class="tr-mono" style="font-size:16px;font-weight:800;color:#F8FAFC;">' + esc(sig.pair) + '</span>' +
                       '<span class="tr-badge" style="background:' + (isBuy ? 'var(--tr-buy-soft)' : 'var(--tr-sell-soft)') + ';color:' + (isBuy ? '#6EE7B7' : '#FCA5A5') + ';">' + esc(sig.type) + '</span>' +
+                      '<span class="tr-pill" style="' + sigStatusStyle + '">' + esc(sigStatus === 'Lost' ? 'Lost (SL Hit)' : sigStatus) + '</span>' +
                     '</div>' +
                     '<button type="button" class="tr-btn tr-btn-sm tr-press" style="min-height:34px;padding:5px 10px;" onclick="copyPublicSignal(\'' + esc(post.id) + '\')">' + (state.copiedPostId === post.id ? 'Copied' : 'Copy') + '</button>' +
                   '</div>' +
-                  '<div class="tr-price-grid">' +
-                    '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">ENTRY</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;">' + sig.entryPrice + '</span></div>' +
-                    '<div class="tr-price-cell" style="border-color:rgba(239,68,68,0.28);"><span style="font-size:10px;font-weight:700;color:#FCA5A5;">SL</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#FCA5A5;">' + sig.stopLoss + '</span></div>' +
-                    '<div class="tr-price-cell" style="border-color:rgba(16,185,129,0.28);"><span style="font-size:10px;font-weight:700;color:#6EE7B7;">TP1</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#6EE7B7;">' + sig.tp1 + '</span></div>' +
-                    '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">TP2</span><span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (sig.tp2 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (sig.tp2 != null ? sig.tp2 : '&mdash;') + '</span></div>' +
-                    '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">TP3</span><span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (sig.tp3 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (sig.tp3 != null ? sig.tp3 : '&mdash;') + '</span></div>' +
-                  '</div>' +
+                  renderLivePriceStrip(sig, 'post:' + post.id) +
+                  renderPriceLevelsGrid(sig) +
                 '</div>'
               : '';
 
@@ -2431,7 +3194,7 @@
           '<div class="tr-flex-between">' +
             '<div>' +
               '<h1 style="margin:0;font-size:20px;font-weight:800;color:#F8FAFC;">Admin Broadcast Feed</h1>' +
-              '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">Official market updates, desk announcements &amp; public signals</div>' +
+              '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">Official market updates, announcements &amp; live-tracked public signals</div>' +
             '</div>' +
             newPostBtn +
           '</div>' +
@@ -2464,6 +3227,10 @@
       };
 
       // Admin Post Modal Logic
+      document.getElementById('pf-sig-dir').addEventListener('change', function (e) {
+        document.getElementById('pf-sig-status').value = isPendingOrderType(e.target.value) ? 'Pending' : 'Active';
+      });
+
       window.setPostType = function (type) {
         state.postModalType = type;
         ['announcement', 'signal', 'media'].forEach(function (t) {
@@ -2477,6 +3244,8 @@
         document.getElementById('post-form-err').classList.add('hidden');
         document.getElementById('post-form').reset();
         document.getElementById('pf-sig-pair').value = 'XAUUSD';
+        document.getElementById('pf-sig-dir').value = 'BUY';
+        document.getElementById('pf-sig-status').value = 'Active';
         clearPostImage();
         setPostType('announcement');
         document.getElementById('post-modal').classList.remove('hidden');
@@ -2549,6 +3318,7 @@
           const tp1 = parseFloat(document.getElementById('pf-sig-tp1').value);
           const tp2Raw = document.getElementById('pf-sig-tp2').value.trim();
           const tp3Raw = document.getElementById('pf-sig-tp3').value.trim();
+          const initStatus = document.getElementById('pf-sig-status').value;
           if (!pair || isNaN(entry) || isNaN(sl) || isNaN(tp1)) {
             errEl.textContent = 'Public Signal requires Pair, Entry, Stop Loss, and TP1.';
             errEl.classList.remove('hidden');
@@ -2561,7 +3331,13 @@
             stopLoss: sl,
             tp1: tp1,
             tp2: tp2Raw ? parseFloat(tp2Raw) : null,
-            tp3: tp3Raw ? parseFloat(tp3Raw) : null
+            tp3: tp3Raw ? parseFloat(tp3Raw) : null,
+            status: initStatus,
+            pips: 0,
+            tp1Hit: false,
+            tp2Hit: false,
+            tp3Hit: false,
+            hitReason: ''
           };
         }
 
@@ -2593,7 +3369,7 @@
       });
 
       // =====================================================
-      // 12. TAB 5 — PROFILE & ADMIN USER MANAGEMENT PANEL
+      // 15. TAB 5 — PROFILE & ADMIN USER MANAGEMENT PANEL
       // =====================================================
       function renderProfileTab() {
         if (!state.profile) return;

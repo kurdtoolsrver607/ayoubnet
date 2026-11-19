@@ -61,11 +61,13 @@ service cloud.firestore {
       return data.keys().hasAll(['uid', 'pair', 'type', 'entryPrice', 'stopLoss', 'tp1', 'lotSize', 'status']) &&
         data.keys().hasOnly([
           'uid', 'pair', 'type', 'entryPrice', 'stopLoss', 'tp1', 'tp2', 'tp3',
-          'lotSize', 'status', 'pips', 'riskReward', 'notes', 'createdAt', 'updatedAt'
+          'tp1Hit', 'tp2Hit', 'tp3Hit', 'hitReason', 'triggeredPrice', 'closedPrice',
+          'activatedAt', 'closedAt', 'lotSize', 'status', 'pips', 'riskReward', 'notes',
+          'createdAt', 'updatedAt'
         ]) &&
         data.uid == userId &&
         data.pair is string && data.pair.size() >= 2 && data.pair.size() <= 20 &&
-        data.type in ['BUY', 'SELL', 'BUY LIMIT', 'SELL LIMIT'] &&
+        data.type in ['BUY', 'SELL', 'BUY LIMIT', 'SELL LIMIT', 'BUY STOP', 'SELL STOP'] &&
         data.entryPrice is number &&
         data.stopLoss is number &&
         data.tp1 is number &&
@@ -79,7 +81,7 @@ service cloud.firestore {
       return data.keys().hasAll(['authorUid', 'authorEmail', 'authorName', 'postType', 'title', 'body']) &&
         data.keys().hasOnly([
           'authorUid', 'authorEmail', 'authorName', 'postType', 'title', 'body',
-          'imageUrl', 'videoUrl', 'signal', 'createdAt'
+          'imageUrl', 'videoUrl', 'signal', 'createdAt', 'updatedAt'
         ]) &&
         data.authorUid == request.auth.uid &&
         data.postType in ['announcement', 'signal', 'media'] &&
