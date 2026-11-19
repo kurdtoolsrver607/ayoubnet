@@ -80,9 +80,14 @@ export const TradingApp: React.FC = () => {
     robotsMeta.content = 'noindex, nofollow';
   }, []);
 
-  // 1. Observe isolated Firebase Auth state
+  // 1. Observe isolated Firebase Auth state (with safety timeout so UI never hangs)
   useEffect(() => {
+    const safetyTimer = window.setTimeout(() => {
+      setAuthReady(true);
+    }, 5000);
+
     const unsub = onAuthStateChanged(tradingAuth, (user) => {
+      window.clearTimeout(safetyTimer);
       setAuthUser(user);
       setAuthReady(true);
       if (!user) {
@@ -92,7 +97,10 @@ export const TradingApp: React.FC = () => {
         setAllUsers([]);
       }
     });
-    return () => unsub();
+    return () => {
+      window.clearTimeout(safetyTimer);
+      unsub();
+    };
   }, []);
 
   // 2. Ensure & subscribe to current user's profile (enforces real-time isBlocked lockout)
