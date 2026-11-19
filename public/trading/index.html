@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0F17">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FX Desk Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+
+  <!-- Official Firebase v10.12.2 Compat CDN (Zero Build Step Required) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --tr-bg: #0B0F17;
+      --tr-surface: #111827;
+      --tr-surface-elevated: #161F30;
+      --tr-surface-glass: rgba(17, 24, 39, 0.88);
+      --tr-border: rgba(148, 163, 184, 0.14);
+      --tr-border-strong: rgba(148, 163, 184, 0.24);
+      --tr-text: #F1F5F9;
+      --tr-text-secondary: #CBD5E1;
+      --tr-muted: #8492A6;
+      --tr-buy: #10B981;
+      --tr-buy-soft: rgba(16, 185, 129, 0.14);
+      --tr-buy-border: rgba(16, 185, 129, 0.34);
+      --tr-teal: #14B8A6;
+      --tr-sell: #EF4444;
+      --tr-sell-soft: rgba(239, 68, 68, 0.14);
+      --tr-sell-border: rgba(239, 68, 68, 0.34);
+      --tr-amber: #F59E0B;
+      --tr-amber-soft: rgba(245, 158, 11, 0.14);
+      --tr-amber-border: rgba(245, 158, 11, 0.34);
+      --tr-blue: #38BDF8;
+      --tr-blue-soft: rgba(56, 189, 248, 0.12);
+      --tr-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --tr-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+      color-scheme: dark;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--tr-bg);
+      color: var(--tr-text);
+      font-family: var(--tr-font-sans);
+      min-height: 100dvh;
+      width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-y: none;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      direction: ltr;
+      text-align: left;
+    }
+
+    .hidden { display: none !important; }
+
+    .tr-mono {
+      font-family: var(--tr-font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tr-press {
+      transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+      touch-action: manipulation;
+      user-select: none;
+    }
+    .tr-press:active:not(:disabled) { transform: scale(0.97); }
+
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--tr-buy);
+      outline-offset: 2px;
+    }
+
+    /* Brand mark */
+    .tr-brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10B981, #0D9488);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #04130D;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    /* Auth & Blocked Fullscreen Views */
+    .tr-center-screen {
+      min-height: 100dvh;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background:
+        radial-gradient(640px 400px at 82% 0%, rgba(16, 185, 129, 0.12), transparent 68%),
+        radial-gradient(500px 360px at 10% 100%, rgba(20, 184, 166, 0.08), transparent 68%),
+        var(--tr-bg);
+    }
+
+    .tr-auth-wrap {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* App Shell */
+    .tr-shell {
+      display: flex;
+      min-height: 100dvh;
+      width: 100%;
+      background:
+        radial-gradient(640px 420px at 88% -6%, rgba(16, 185, 129, 0.08), transparent 70%),
+        radial-gradient(520px 380px at 0% 100%, rgba(20, 184, 166, 0.06), transparent 70%),
+        var(--tr-bg);
+    }
+
+    /* Desktop Sidebar */
+    .tr-sidebar { display: none; }
+    @media (min-width: 1024px) {
+      .tr-sidebar {
+        display: flex;
+        flex-direction: column;
+        width: 256px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        height: 100dvh;
+        background: rgba(13, 19, 31, 0.94);
+        border-right: 1px solid var(--tr-border);
+        padding: 20px 14px;
+        z-index: 30;
+      }
+    }
+
+    .tr-sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px 18px;
+      border-bottom: 1px solid var(--tr-border);
+      margin-bottom: 16px;
+    }
+
+    .tr-sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .tr-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--tr-muted);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tr-nav-btn:hover { color: var(--tr-text); background: rgba(255, 255, 255, 0.04); }
+    .tr-nav-btn.active {
+      color: #ECFDF5;
+      background: var(--tr-buy-soft);
+      border-color: var(--tr-buy-border);
+    }
+    .tr-nav-btn.active svg { color: var(--tr-buy); }
+
+    /* Main Column */
+    .tr-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    /* Mobile Top Bar */
+    .tr-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 35;
+      height: calc(52px + env(safe-area-inset-top, 0px));
+      padding: env(safe-area-inset-top, 0px) 16px 0;
+      background: rgba(11, 15, 23, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--tr-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    @media (min-width: 1024px) { .tr-topbar { display: none; } }
+
+    .tr-content {
+      flex: 1;
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px 16px calc(88px + env(safe-area-inset-bottom, 0px));
+    }
+    @media (min-width: 768px) {
+      .tr-content { padding: 24px 24px calc(92px + env(safe-area-inset-bottom, 0px)); }
+    }
+    @media (min-width: 1024px) {
+      .tr-content { padding: 28px 32px 44px; }
+    }
+
+    /* Mobile Bottom Nav */
+    .tr-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background: rgba(13, 19, 31, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--tr-border);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      height: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
+    @media (min-width: 1024px) { .tr-bottom-nav { display: none; } }
+
+    .tr-bottom-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: none;
+      background: transparent;
+      color: var(--tr-muted);
+      font-family: inherit;
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 48px;
+      padding: 4px 2px;
+      position: relative;
+    }
+    .tr-bottom-item.active { color: var(--tr-buy); }
+    .tr-bottom-item.active::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      width: 28px;
+      height: 2.5px;
+      border-radius: 0 0 4px 4px;
+      background: var(--tr-buy);
+    }
+
+    /* Cards & Grids */
+    .tr-card {
+      background: var(--tr-surface-glass);
+      border: 1px solid var(--tr-border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .tr-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (min-width: 768px) {
+      .tr-stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    }
+    @media (min-width: 1200px) {
+      .tr-stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    .tr-signals-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    @media (min-width: 900px) {
+      .tr-signals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    }
+
+    .tr-price-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (min-width: 460px) {
+      .tr-price-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    }
+
+    .tr-price-cell {
+      background: rgba(11, 15, 23, 0.7);
+      border: 1px solid var(--tr-border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* Inputs & Buttons */
+    .tr-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--tr-muted);
+      margin-bottom: 6px;
+    }
+
+    .tr-input, .tr-select, .tr-textarea {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--tr-border-strong);
+      background: rgba(11, 15, 23, 0.88);
+      color: var(--tr-text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+    .tr-input:focus, .tr-select:focus, .tr-textarea:focus {
+      border-color: var(--tr-buy);
+      background: #0B0F17;
+    }
+    .tr-textarea { min-height: 88px; resize: vertical; }
+
+    .tr-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--tr-border-strong);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--tr-text);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .tr-btn-sm { min-height: 38px; padding: 7px 12px; font-size: 12.5px; border-radius: 10px; }
+    .tr-btn-primary {
+      background: linear-gradient(135deg, #10B981, #0D9488);
+      border-color: transparent;
+      color: #03150E;
+      font-weight: 700;
+    }
+    .tr-btn-buy {
+      background: var(--tr-buy-soft);
+      border-color: var(--tr-buy-border);
+      color: #6EE7B7;
+    }
+    .tr-btn-danger {
+      background: var(--tr-sell-soft);
+      border-color: var(--tr-sell-border);
+      color: #FCA5A5;
+    }
+    .tr-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* Segmented Controls */
+    .tr-segmented {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--tr-border);
+      border-radius: 12px;
+      overflow-x: auto;
+      max-width: 100%;
+      scrollbar-width: none;
+    }
+    .tr-segmented::-webkit-scrollbar { display: none; }
+
+    .tr-seg-btn {
+      min-height: 36px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--tr-muted);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .tr-seg-btn.active {
+      background: rgba(255, 255, 255, 0.09);
+      color: var(--tr-text);
+    }
+
+    /* Alert boxes */
+    .tr-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+    .tr-alert-err {
+      background: var(--tr-sell-soft);
+      border: 1px solid var(--tr-sell-border);
+      color: #FECACA;
+    }
+    .tr-alert-ok {
+      background: var(--tr-buy-soft);
+      border: 1px solid var(--tr-buy-border);
+      color: #A7F3D0;
+    }
+
+    /* FAB */
+    .tr-fab {
+      position: fixed;
+      right: 18px;
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+      z-index: 38;
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      border: none;
+      background: linear-gradient(135deg, #10B981, #0D9488);
+      color: #04130D;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(16, 185, 129, 0.36);
+    }
+    @media (min-width: 1024px) {
+      .tr-fab { bottom: 28px; right: 28px; }
+    }
+
+    /* Modal / Bottom Sheet */
+    .tr-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(4, 7, 13, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    @media (min-width: 640px) {
+      .tr-modal-backdrop { align-items: center; padding: 20px; }
+    }
+
+    .tr-sheet {
+      width: 100%;
+      max-width: 560px;
+      max-height: 92dvh;
+      background: #101726;
+      border: 1px solid var(--tr-border-strong);
+      border-radius: 22px 22px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: trSlideUp 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (min-width: 640px) { .tr-sheet { border-radius: 20px; } }
+
+    .tr-sheet-handle {
+      width: 40px;
+      height: 4px;
+      border-radius: 99px;
+      background: rgba(148, 163, 184, 0.28);
+      margin: 10px auto 2px;
+    }
+    @media (min-width: 640px) { .tr-sheet-handle { display: none; } }
+
+    .tr-sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--tr-border);
+    }
+    .tr-sheet-body {
+      padding: 18px 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1;
+    }
+    .tr-sheet-footer {
+      padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid var(--tr-border);
+      background: rgba(11, 15, 23, 0.92);
+      display: flex;
+      gap: 10px;
+    }
+
+    .tr-scroll-x {
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tr-scroll-x::-webkit-scrollbar { display: none; }
+
+    .tr-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .tr-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .tr-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .tr-flex-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .tr-stack { display: flex; flex-direction: column; gap: 14px; }
+    .tr-stack-lg { display: flex; flex-direction: column; gap: 16px; }
+
+    @keyframes trSlideUp {
+      from { transform: translateY(18px); opacity: 0.4; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <!-- =========================================================
+       VIEW 1: AUTH SCREEN (Rendered Immediately on Frame 1)
+       ========================================================= -->
+  <div id="view-auth" class="tr-center-screen">
+    <div class="tr-auth-wrap">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+        <div class="tr-brand-mark" style="width:42px;height:42px;border-radius:12px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div>
+          <div style="font-size:18px;font-weight:800;letter-spacing:-0.02em;color:#F8FAFC;">FX Desk Terminal</div>
+          <div style="font-size:12.5px;color:var(--tr-muted);">Private Trading Journal &amp; Market Analytics</div>
+        </div>
+      </div>
+
+      <div class="tr-card" style="padding:24px 22px;background:rgba(17,24,39,0.94);border-color:var(--tr-border-strong);">
+        <!-- Mode Switcher (Login / Create Account) -->
+        <div id="auth-tabs" class="tr-segmented" style="width:100%;display:grid;grid-template-columns:1fr 1fr;margin-bottom:20px;">
+          <button type="button" id="auth-tab-login" class="tr-seg-btn tr-press active" onclick="setAuthMode('login')">Sign In</button>
+          <button type="button" id="auth-tab-signup" class="tr-seg-btn tr-press" onclick="setAuthMode('signup')">Create Account</button>
+        </div>
+
+        <!-- Reset Header (shown only in reset mode) -->
+        <div id="auth-reset-header" class="hidden" style="margin-bottom:18px;">
+          <button type="button" class="tr-press" onclick="setAuthMode('login')" style="display:inline-flex;align-items:center;gap:6px;background:transparent;border:none;color:var(--tr-muted);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:10px;">
+            &larr; Back to Sign In
+          </button>
+          <h1 style="font-size:20px;font-weight:800;margin:0;color:#F8FAFC;">Reset Password</h1>
+          <p style="font-size:13px;color:var(--tr-muted);margin:6px 0 0;">Enter your email address to receive a Firebase password reset link.</p>
+        </div>
+
+        <div id="auth-error" class="tr-alert tr-alert-err hidden" role="alert"></div>
+        <div id="auth-success" class="tr-alert tr-alert-ok hidden" role="status"></div>
+
+        <form id="auth-form" class="tr-stack" novalidate>
+          <div id="auth-name-wrap" class="hidden">
+            <label class="tr-label" for="auth-name">Trader Display Name</label>
+            <input id="auth-name" type="text" class="tr-input" placeholder="Your name" autocomplete="name" maxlength="80">
+          </div>
+
+          <div>
+            <label class="tr-label" for="auth-email">Email Address</label>
+            <input id="auth-email" type="email" class="tr-input" placeholder="name@example.com" autocomplete="email" required>
+          </div>
+
+          <div id="auth-pass-wrap">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <label class="tr-label" for="auth-password" style="margin-bottom:0;">Password</label>
+              <button type="button" id="auth-forgot-btn" onclick="setAuthMode('reset')" style="background:transparent;border:none;color:var(--tr-buy);font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;">
+                Forgot password?
+              </button>
+            </div>
+            <div style="position:relative;">
+              <input id="auth-password" type="password" class="tr-input" style="padding-right:48px;" placeholder="Enter password" autocomplete="current-password" required>
+              <button type="button" id="auth-toggle-pw" aria-label="Toggle password visibility" onclick="togglePasswordVisibility()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;background:transparent;border:none;color:var(--tr-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div id="auth-confirm-wrap" class="hidden">
+            <label class="tr-label" for="auth-confirm">Confirm Password</label>
+            <input id="auth-confirm" type="password" class="tr-input" placeholder="Re-enter password" autocomplete="new-password">
+          </div>
+
+          <button type="submit" id="auth-submit-btn" class="tr-btn tr-btn-primary tr-press" style="width:100%;height:48px;margin-top:4px;">
+            Access Terminal &rarr;
+          </button>
+        </form>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:18px;color:var(--tr-muted);font-size:12px;text-align:center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Firebase Auth encrypted · Strictly isolated private trade vault</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VIEW 2: ACCOUNT SUSPENDED (Blocked User Screen)
+       ========================================================= -->
+  <div id="view-blocked" class="tr-center-screen hidden" style="background:radial-gradient(560px 360px at 50% 10%, rgba(239,68,68,0.11), transparent 70%), var(--tr-bg);">
+    <div class="tr-card" style="width:100%;max-width:420px;text-align:center;padding:32px 24px;border-color:var(--tr-sell-border);">
+      <div style="width:56px;height:56px;border-radius:16px;background:var(--tr-sell-soft);border:1px solid var(--tr-sell-border);color:var(--tr-sell);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      </div>
+      <h1 style="font-size:21px;font-weight:800;margin:0 0 8px;color:#F8FAFC;">Account Suspended</h1>
+      <p style="font-size:13.5px;color:var(--tr-text-secondary);margin:0 0 10px;">
+        Access to this trading desk has been restricted by the administrator for <strong id="blocked-email" style="color:#F8FAFC;"></strong>.
+      </p>
+      <p style="font-size:12.5px;color:var(--tr-muted);margin:0 0 24px;">
+        Contact the desk administrator if you believe this suspension is a mistake.
+      </p>
+      <button type="button" onclick="handleSignOut()" class="tr-btn tr-btn-danger tr-press" style="width:100%;">
+        Sign Out
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VIEW 3: MAIN 5-TAB TRADING APP SHELL
+       ========================================================= -->
+  <div id="view-app" class="tr-shell hidden">
+    <!-- Desktop Sidebar -->
+    <aside class="tr-sidebar" aria-label="Trading Navigation">
+      <div class="tr-sidebar-brand">
+        <div class="tr-brand-mark">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-size:15px;font-weight:800;color:#F8FAFC;">FX Desk</div>
+          <div id="sidebar-user-name" style="font-size:11.5px;color:var(--tr-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Trader</div>
+        </div>
+      </div>
+
+      <nav class="tr-sidebar-nav" id="sidebar-nav"></nav>
+
+      <div style="padding:12px;border-radius:12px;background:rgba(11,15,23,0.75);border:1px solid var(--tr-border);font-size:11.5px;color:var(--tr-muted);">
+        <div id="sidebar-role-label" style="font-weight:700;color:#CBD5E1;margin-bottom:2px;">Private Vault</div>
+        <div id="sidebar-user-email" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+      </div>
+    </aside>
+
+    <!-- Main Content Column -->
+    <div class="tr-main">
+      <!-- Mobile Compact Sticky Top Bar -->
+      <header class="tr-topbar">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <div class="tr-brand-mark" style="width:30px;height:30px;border-radius:9px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </div>
+          <span id="topbar-title" style="font-size:15px;font-weight:800;color:#F8FAFC;">Analysis</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="topbar-growth" class="tr-mono" style="font-size:12px;font-weight:700;color:#6EE7B7;">+0.0%</span>
+          <span id="topbar-admin-badge" class="tr-badge hidden" style="background:var(--tr-buy-soft);border:1px solid var(--tr-buy-border);color:#6EE7B7;">ADMIN</span>
+        </div>
+      </header>
+
+      <!-- Active Tab Viewport -->
+      <main class="tr-content">
+        <section id="tab-analysis" class="tr-stack-lg"></section>
+        <section id="tab-journal" class="tr-stack-lg hidden"></section>
+        <section id="tab-market" class="tr-stack-lg hidden"></section>
+        <section id="tab-feed" class="tr-stack-lg hidden"></section>
+        <section id="tab-profile" class="tr-stack-lg hidden"></section>
+      </main>
+    </div>
+
+    <!-- Fixed 5-Tab Bottom Navigation Bar (Mobile / Android WebView) -->
+    <nav class="tr-bottom-nav" id="bottom-nav" aria-label="Bottom Navigation"></nav>
+  </div>
+
+  <!-- Floating + Button (Shown on Journal Tab) -->
+  <button type="button" id="journal-fab" class="tr-fab tr-press hidden" aria-label="Log new trade signal" onclick="openTradeModal()">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <!-- =========================================================
+       MODAL 1: LOG / EDIT PRIVATE TRADE SIGNAL
+       ========================================================= -->
+  <div id="trade-modal" class="tr-modal-backdrop hidden" onclick="if(event.target===this) closeTradeModal()">
+    <div class="tr-sheet" role="dialog" aria-modal="true" aria-labelledby="trade-modal-title">
+      <div class="tr-sheet-handle"></div>
+      <div class="tr-sheet-header">
+        <div>
+          <h2 id="trade-modal-title" style="margin:0;font-size:17px;font-weight:800;color:#F8FAFC;">Log Private Trade Signal</h2>
+          <div style="font-size:12px;color:var(--tr-muted);">Auto-calculates Risk:Reward &amp; account metrics</div>
+        </div>
+        <button type="button" class="tr-btn tr-btn-sm tr-press" style="padding:6px 10px;min-height:36px;" onclick="closeTradeModal()" aria-label="Close">&times;</button>
+      </div>
+      <form id="trade-form" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+        <div class="tr-sheet-body tr-stack">
+          <div id="trade-form-err" class="tr-alert tr-alert-err hidden"></div>
+
+          <div>
+            <label class="tr-label" for="tf-pair">Instrument / Pair *</label>
+            <input id="tf-pair" type="text" class="tr-input tr-mono" value="XAUUSD" placeholder="XAUUSD" required>
+            <div class="tr-scroll-x" id="tf-pair-presets" style="display:flex;gap:6px;margin-top:8px;"></div>
+          </div>
+
+          <div>
+            <label class="tr-label">Order Type *</label>
+            <div class="tr-grid-2" id="tf-dir-buttons"></div>
+          </div>
+
+          <div class="tr-grid-2">
+            <div>
+              <label class="tr-label" for="tf-entry">Entry Price *</label>
+              <input id="tf-entry" type="number" step="any" class="tr-input tr-mono" placeholder="2645.50" required>
+            </div>
+            <div>
+              <label class="tr-label" for="tf-sl">Stop Loss (SL) *</label>
+              <input id="tf-sl" type="number" step="any" class="tr-input tr-mono" placeholder="2638.00" required>
+            </div>
+            <div>
+              <label class="tr-label" for="tf-tp1">TP 1 *</label>
+              <input id="tf-tp1" type="number" step="any" class="tr-input tr-mono" placeholder="2660.50" required>
+            </div>
+            <div>
+              <label class="tr-label" for="tf-tp2">TP 2 (optional)</label>
+              <input id="tf-tp2" type="number" step="any" class="tr-input tr-mono" placeholder="2675.00">
+            </div>
+            <div>
+              <label class="tr-label" for="tf-tp3">TP 3 (optional)</label>
+              <input id="tf-tp3" type="number" step="any" class="tr-input tr-mono" placeholder="2695.00">
+            </div>
+            <div>
+              <label class="tr-label" for="tf-lots">Lot Size *</label>
+              <input id="tf-lots" type="number" step="0.01" min="0.01" class="tr-input tr-mono" value="0.10" required>
+            </div>
+          </div>
+
+          <!-- Live R:R Preview -->
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 14px;border-radius:12px;background:rgba(11,15,23,0.88);border:1px solid var(--tr-border-strong);">
+            <div>
+              <div style="font-size:11px;color:var(--tr-muted);font-weight:600;">Auto Risk : Reward (TP1)</div>
+              <div id="tf-rr-preview" class="tr-mono" style="font-size:18px;font-weight:800;color:var(--tr-muted);">&mdash;</div>
+            </div>
+            <div class="tr-mono" style="font-size:12px;color:var(--tr-text-secondary);text-align:right;">
+              <div id="tf-sl-pips">SL risk: 0 pips</div>
+              <div id="tf-tp-pips" style="color:#6EE7B7;">TP1 reward: +0 pips</div>
+            </div>
+          </div>
+
+          <div class="tr-grid-2">
+            <div>
+              <label class="tr-label" for="tf-status">Status</label>
+              <select id="tf-status" class="tr-select">
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Won">Won</option>
+                <option value="Lost">Lost</option>
+              </select>
+            </div>
+            <div>
+              <label class="tr-label" for="tf-pips">Pips Result</label>
+              <input id="tf-pips" type="number" step="any" class="tr-input tr-mono" value="0" placeholder="e.g. 120 or -45">
+            </div>
+          </div>
+
+          <div>
+            <label class="tr-label" for="tf-notes">Setup Notes</label>
+            <textarea id="tf-notes" class="tr-textarea" maxlength="1000" placeholder="London session liquidity sweep, H4 structure confirmation..."></textarea>
+          </div>
+        </div>
+
+        <div class="tr-sheet-footer">
+          <button type="button" class="tr-btn tr-press" style="flex:1;" onclick="closeTradeModal()">Cancel</button>
+          <button type="submit" id="tf-save-btn" class="tr-btn tr-btn-primary tr-press" style="flex:2;">Save Trade Signal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL 2: ADMIN PUBLIC FEED COMPOSER (tafteshok@gmail.com only)
+       ========================================================= -->
+  <div id="post-modal" class="tr-modal-backdrop hidden" onclick="if(event.target===this) closePostModal()">
+    <div class="tr-sheet" role="dialog" aria-modal="true" aria-labelledby="post-modal-title">
+      <div class="tr-sheet-handle"></div>
+      <div class="tr-sheet-header">
+        <div>
+          <h2 id="post-modal-title" style="margin:0;font-size:17px;font-weight:800;color:#F8FAFC;">Publish to Public Feed</h2>
+          <div style="font-size:12px;color:var(--tr-muted);">Visible immediately to all active logged-in traders</div>
+        </div>
+        <button type="button" class="tr-btn tr-btn-sm tr-press" style="padding:6px 10px;min-height:36px;" onclick="closePostModal()" aria-label="Close">&times;</button>
+      </div>
+      <form id="post-form" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+        <div class="tr-sheet-body tr-stack">
+          <div id="post-form-err" class="tr-alert tr-alert-err hidden"></div>
+
+          <div class="tr-segmented" style="width:100%;display:grid;grid-template-columns:repeat(3,1fr);">
+            <button type="button" id="pf-type-announcement" class="tr-seg-btn tr-press active" onclick="setPostType('announcement')">Announcement</button>
+            <button type="button" id="pf-type-signal" class="tr-seg-btn tr-press" onclick="setPostType('signal')">Public Signal</button>
+            <button type="button" id="pf-type-media" class="tr-seg-btn tr-press" onclick="setPostType('media')">Chart / Video</button>
+          </div>
+
+          <div>
+            <label class="tr-label" for="pf-title">Headline / Title</label>
+            <input id="pf-title" type="text" class="tr-input" maxlength="180" placeholder="e.g. Gold NY Session Outlook">
+          </div>
+
+          <div>
+            <label class="tr-label" for="pf-body">Message / Commentary</label>
+            <textarea id="pf-body" class="tr-textarea" maxlength="4000" placeholder="Write your market commentary, key zones, or risk reminder..."></textarea>
+          </div>
+
+          <!-- Public Signal Fields -->
+          <div id="pf-signal-fields" class="hidden" style="padding:14px;border-radius:12px;background:rgba(11,15,23,0.75);border:1px solid var(--tr-border-strong);display:flex;flex-direction:column;gap:10px;">
+            <div class="tr-grid-2">
+              <div>
+                <label class="tr-label" for="pf-sig-pair">Pair *</label>
+                <input id="pf-sig-pair" type="text" class="tr-input tr-mono" value="XAUUSD">
+              </div>
+              <div>
+                <label class="tr-label" for="pf-sig-dir">Order Type *</label>
+                <select id="pf-sig-dir" class="tr-select">
+                  <option value="BUY">BUY</option>
+                  <option value="SELL">SELL</option>
+                  <option value="BUY LIMIT">BUY LIMIT</option>
+                  <option value="SELL LIMIT">SELL LIMIT</option>
+                </select>
+              </div>
+            </div>
+            <div class="tr-grid-2">
+              <div>
+                <label class="tr-label" for="pf-sig-entry">Entry *</label>
+                <input id="pf-sig-entry" type="number" step="any" class="tr-input tr-mono">
+              </div>
+              <div>
+                <label class="tr-label" for="pf-sig-sl">Stop Loss *</label>
+                <input id="pf-sig-sl" type="number" step="any" class="tr-input tr-mono">
+              </div>
+              <div>
+                <label class="tr-label" for="pf-sig-tp1">TP 1 *</label>
+                <input id="pf-sig-tp1" type="number" step="any" class="tr-input tr-mono">
+              </div>
+              <div>
+                <label class="tr-label" for="pf-sig-tp2">TP 2 (optional)</label>
+                <input id="pf-sig-tp2" type="number" step="any" class="tr-input tr-mono">
+              </div>
+            </div>
+            <div>
+              <label class="tr-label" for="pf-sig-tp3">TP 3 (optional)</label>
+              <input id="pf-sig-tp3" type="number" step="any" class="tr-input tr-mono">
+            </div>
+          </div>
+
+          <!-- Image URL or File Upload -->
+          <div>
+            <label class="tr-label" for="pf-image-url">Image URL or Upload Chart</label>
+            <div style="display:flex;gap:8px;">
+              <input id="pf-image-url" type="text" class="tr-input" placeholder="https://... or upload image">
+              <label class="tr-btn tr-press" style="cursor:pointer;flex-shrink:0;padding:0 14px;">
+                <span id="pf-upload-label">Upload</span>
+                <input id="pf-image-file" type="file" accept="image/*" style="display:none;">
+              </label>
+            </div>
+            <div id="pf-image-preview" class="hidden" style="margin-top:8px;position:relative;">
+              <img id="pf-image-preview-img" alt="Preview" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;border:1px solid var(--tr-border);display:block;">
+              <button type="button" onclick="clearPostImage()" aria-label="Remove image" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:8px;border:none;background:rgba(11,15,23,0.88);color:#F8FAFC;cursor:pointer;font-size:16px;">&times;</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="tr-label" for="pf-video-url">Video URL (YouTube, Vimeo, or MP4 link)</label>
+            <input id="pf-video-url" type="url" class="tr-input" placeholder="https://youtube.com/watch?v=...">
+          </div>
+        </div>
+
+        <div class="tr-sheet-footer">
+          <button type="button" class="tr-btn tr-press" style="flex:1;" onclick="closePostModal()">Cancel</button>
+          <button type="submit" id="pf-save-btn" class="tr-btn tr-btn-primary tr-press" style="flex:2;">Publish Broadcast</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       STANDALONE VANILLA JAVASCRIPT APPLICATION
+       ========================================================= -->
+  <script>
+    (function () {
+      'use strict';
+
+      // =====================================================
+      // 1. FIREBASE CONFIGURATION (Public Web App Identifiers Only - ZERO Passwords)
+      // =====================================================
+      const TRADING_ADMIN_EMAIL = 'tafteshok@gmail.com';
+      const BASE_EQUITY_KEY = 'tr_isolated_base_equity_v1';
+
+      const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyAfL6z1wyRAmI07-cDb11cLf1s-6hCSIvM",
+        authDomain: "myapp-59c7a.firebaseapp.com",
+        databaseURL: "https://myapp-59c7a-default-rtdb.firebaseio.com",
+        projectId: "myapp-59c7a",
+        storageBucket: "myapp-59c7a.firebasestorage.app",
+        messagingSenderId: "367383957201",
+        appId: "1:367383957201:web:3d87ce87ffe814dcfffff0",
+        measurementId: "G-06Z7472FD7"
+      };
+
+      const POPULAR_PAIRS = ['XAUUSD', 'XAGUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'GBPJPY', 'AUDUSD', 'BTCUSD'];
+      const DIRECTIONS = ['BUY', 'SELL', 'BUY LIMIT', 'SELL LIMIT'];
+      const MARKET_INSTRUMENTS = [
+        { label: 'Gold', symbol: 'XAUUSD', tvSymbol: 'OANDA:XAUUSD' },
+        { label: 'Silver', symbol: 'XAGUSD', tvSymbol: 'OANDA:XAGUSD' },
+        { label: 'Euro', symbol: 'EURUSD', tvSymbol: 'OANDA:EURUSD' },
+        { label: 'Pound', symbol: 'GBPUSD', tvSymbol: 'OANDA:GBPUSD' },
+        { label: 'Dollar/Yen', symbol: 'USDJPY', tvSymbol: 'OANDA:USDJPY' },
+        { label: 'Pound/Yen', symbol: 'GBPJPY', tvSymbol: 'OANDA:GBPJPY' },
+        { label: 'Aussie', symbol: 'AUDUSD', tvSymbol: 'OANDA:AUDUSD' },
+        { label: 'Bitcoin', symbol: 'BTCUSD', tvSymbol: 'BITSTAMP:BTCUSD' }
+      ];
+      const TIMEFRAMES = [
+        { label: '5m', value: '5' },
+        { label: '15m', value: '15' },
+        { label: '1H', value: '60' },
+        { label: '4H', value: '240' },
+        { label: '1D', value: 'D' }
+      ];
+
+      // Initialize isolated named Firebase app
+      let app = null;
+      let auth = null;
+      let db = null;
+      let firebaseReady = false;
+
+      try {
+        if (window.firebase) {
+          const existing = (firebase.apps || []).find(function (a) { return a.name === 'trading-standalone'; });
+          app = existing || firebase.initializeApp(FIREBASE_CONFIG, 'trading-standalone');
+          auth = firebase.auth(app);
+          db = firebase.firestore(app);
+          firebaseReady = true;
+        }
+      } catch (initErr) {
+        console.error('Firebase init error:', initErr);
+      }
+
+      // =====================================================
+      // 2. APPLICATION STATE
+      // =====================================================
+      const state = {
+        authMode: 'login',
+        user: null,
+        profile: null,
+        isAdmin: false,
+        activeTab: 'analysis',
+        baseEquity: loadBaseEquity(),
+        trades: [],
+        posts: [],
+        allUsers: [],
+        // UI state
+        journalFilter: 'All',
+        journalSearch: '',
+        expandedCharts: {},
+        confirmDeleteTradeId: null,
+        editingTradeId: null,
+        tradeFormDirection: 'BUY',
+        marketSymbol: 'OANDA:XAUUSD',
+        marketInterval: '60',
+        marketMounted: false,
+        postModalType: 'announcement',
+        confirmDeletePostId: null,
+        copiedPostId: null,
+        userFilter: 'all',
+        userSearch: '',
+        // Firestore unsubscribers
+        unsubProfile: null,
+        unsubTrades: null,
+        unsubPosts: null,
+        unsubUsers: null
+      };
+
+      function loadBaseEquity() {
+        try {
+          const saved = parseFloat(localStorage.getItem(BASE_EQUITY_KEY) || '10000');
+          return (!isNaN(saved) && saved >= 100) ? saved : 10000;
+        } catch (e) {
+          return 10000;
+        }
+      }
+
+      function saveBaseEquity(val) {
+        state.baseEquity = val;
+        try { localStorage.setItem(BASE_EQUITY_KEY, String(val)); } catch (e) {}
+      }
+
+      // =====================================================
+      // 3. UTILITIES & FORMATTING
+      // =====================================================
+      function esc(str) {
+        return String(str == null ? '' : str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function isAdminEmail(email) {
+        return String(email || '').trim().toLowerCase() === TRADING_ADMIN_EMAIL;
+      }
+
+      function getTsMs(ts) {
+        if (!ts) return 0;
+        if (typeof ts === 'number') return ts;
+        if (typeof ts === 'string') return new Date(ts).getTime() || 0;
+        if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+        if (typeof ts.seconds === 'number') return ts.seconds * 1000;
+        return 0;
+      }
+
+      function formatShortTime(ts) {
+        const ms = getTsMs(ts);
+        if (!ms) return 'Just now';
+        return new Date(ms).toLocaleString('en-US', {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+      }
+
+      function getPipSize(pair) {
+        const p = String(pair || '').trim().toUpperCase();
+        if (p.includes('XAU') || p.includes('GOLD')) return 0.1;
+        if (p.includes('XAG') || p.includes('SILVER')) return 0.01;
+        if (p.includes('JPY')) return 0.01;
+        if (p.includes('BTC') || p.includes('US30') || p.includes('NAS') || p.includes('SPX')) return 1;
+        return 0.0001;
+      }
+
+      function calcRR(entry, sl, tp1, direction) {
+        if (!entry || !sl || !tp1 || isNaN(entry) || isNaN(sl) || isNaN(tp1)) return 0;
+        const isSell = direction ? direction.indexOf('SELL') === 0 : sl > entry;
+        const risk = isSell ? (sl - entry) : (entry - sl);
+        const reward = isSell ? (entry - tp1) : (tp1 - entry);
+        if (risk <= 0 || reward <= 0) {
+          const absR = Math.abs(entry - sl);
+          const absW = Math.abs(tp1 - entry);
+          return absR === 0 ? 0 : Number((absW / absR).toFixed(2));
+        }
+        return Number((reward / risk).toFixed(2));
+      }
+
+      function estimatePips(pair, entry, target) {
+        if (!entry || !target || isNaN(entry) || isNaN(target)) return 0;
+        return Math.round(Math.abs(target - entry) / getPipSize(pair));
+      }
+
+      function toTVSymbol(pair) {
+        const clean = String(pair || 'XAUUSD').trim().toUpperCase().replace(/[^A-Z0-9:]/g, '');
+        if (clean.includes(':')) return clean;
+        if (clean === 'XAUUSD' || clean === 'GOLD') return 'OANDA:XAUUSD';
+        if (clean === 'XAGUSD' || clean === 'SILVER') return 'OANDA:XAGUSD';
+        if (clean === 'BTCUSD' || clean === 'BTCUSDT') return 'BITSTAMP:BTCUSD';
+        if (clean === 'ETHUSD' || clean === 'ETHUSDT') return 'BITSTAMP:ETHUSD';
+        if (clean === 'US30') return 'OANDA:US30USD';
+        if (clean === 'NAS100') return 'OANDA:NAS100USD';
+        return 'OANDA:' + clean;
+      }
+
+      function mapAuthError(err) {
+        const code = (err && err.code) ? String(err.code) : '';
+        switch (code) {
+          case 'auth/invalid-email': return 'Please enter a valid email address.';
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+          case 'auth/invalid-credential': return 'Invalid email or password. Please check your credentials.';
+          case 'auth/email-already-in-use': return 'An account with this email already exists.';
+          case 'auth/weak-password': return 'Password must be at least 6 characters long.';
+          case 'auth/too-many-requests': return 'Too many attempts. Please wait a few minutes and try again.';
+          case 'auth/network-request-failed': return 'Network error. Please check your internet connection.';
+          case 'auth/operation-not-allowed': return 'Email/Password sign-in is not enabled yet in Firebase Console.';
+          default: return (err && err.message) ? err.message : 'Authentication failed. Please try again.';
+        }
+      }
+
+      function getEmbedVideo(url) {
+        const trimmed = String(url || '').trim();
+        if (!trimmed) return null;
+        const yt = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+        if (yt) return { kind: 'iframe', src: 'https://www.youtube.com/embed/' + yt[1] };
+        const vm = trimmed.match(/vimeo\.com\/(\d+)/);
+        if (vm) return { kind: 'iframe', src: 'https://player.vimeo.com/video/' + vm[1] };
+        if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(trimmed)) return { kind: 'video', src: trimmed };
+        return { kind: 'link', src: trimmed };
+      }
+
+      function compressImageFile(file) {
+        return new Promise(function (resolve, reject) {
+          const reader = new FileReader();
+          reader.onerror = function () { reject(new Error('Could not read file.')); };
+          reader.onload = function () {
+            const img = new Image();
+            img.onerror = function () { reject(new Error('Invalid image file.')); };
+            img.onload = function () {
+              const steps = [[1200, 0.8], [960, 0.72], [720, 0.62], [560, 0.52]];
+              for (let i = 0; i < steps.length; i++) {
+                const maxDim = steps[i][0];
+                const quality = steps[i][1];
+                let w = img.width, h = img.height;
+                if (w > maxDim || h > maxDim) {
+                  if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                  else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) continue;
+                ctx.drawImage(img, 0, 0, w, h);
+                const out = canvas.toDataURL('image/jpeg', quality);
+                if (out.length <= 580000) { resolve(out); return; }
+              }
+              reject(new Error('Image is too large even after compression.'));
+            };
+            img.src = String(reader.result || '');
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // =====================================================
+      // 4. ANALYTICS & SMART GUIDANCE ENGINE
+      // =====================================================
+      function computeAnalytics() {
+        const trades = state.trades;
+        const safeEq = state.baseEquity > 0 ? state.baseEquity : 10000;
+        const totalTrades = trades.length;
+        const activeTrades = trades.filter(function (t) { return t.status === 'Active'; }).length;
+        const pendingTrades = trades.filter(function (t) { return t.status === 'Pending'; }).length;
+
+        const closed = trades
+          .filter(function (t) { return t.status === 'Won' || t.status === 'Lost'; })
+          .slice()
+          .sort(function (a, b) { return getTsMs(a.createdAt) - getTsMs(b.createdAt); });
+
+        const wins = closed.filter(function (t) { return t.status === 'Won'; }).length;
+        const losses = closed.filter(function (t) { return t.status === 'Lost'; }).length;
+        const closedTrades = closed.length;
+        const winRate = closedTrades > 0 ? (wins / closedTrades) * 100 : 0;
+
+        let grossWinUsd = 0, grossLossUsd = 0, grossWinPips = 0, grossLossPips = 0, netPips = 0;
+        let equity = safeEq, peak = safeEq, maxDD = 0;
+        const curve = [safeEq];
+
+        closed.forEach(function (t) {
+          const lots = Math.max(0.01, Number(t.lotSize || 0.01));
+          const absPips = Math.abs(Number(t.pips || 0));
+          const signedPips = t.status === 'Lost' ? -absPips : absPips;
+          const pnl = signedPips * lots * 10;
+
+          if (t.status === 'Won') {
+            grossWinUsd += Math.max(0, pnl);
+            grossWinPips += absPips;
+            netPips += absPips;
+          } else {
+            grossLossUsd += Math.abs(Math.min(0, pnl));
+            grossLossPips += absPips;
+            netPips -= absPips;
+          }
+
+          equity += pnl;
+          curve.push(Number(equity.toFixed(2)));
+          if (equity > peak) peak = equity;
+          if (peak > 0) {
+            const dd = ((peak - equity) / peak) * 100;
+            if (dd > maxDD) maxDD = dd;
+          }
+        });
+
+        const growthPercent = ((equity - safeEq) / safeEq) * 100;
+        const profitFactor = grossLossUsd > 0 ? (grossWinUsd / grossLossUsd) : (grossWinUsd > 0 ? 9.99 : 0);
+        const totalLots = trades.reduce(function (s, t) { return s + Math.max(0, Number(t.lotSize || 0)); }, 0);
+
+        const rrList = trades
+          .map(function (t) { return t.riskReward > 0 ? t.riskReward : calcRR(t.entryPrice, t.stopLoss, t.tp1, t.type); })
+          .filter(function (v) { return v > 0; });
+        const avgRR = rrList.length > 0 ? rrList.reduce(function (a, b) { return a + b; }, 0) / rrList.length : 0;
+
+        const times = trades.map(function (t) { return getTsMs(t.createdAt); }).filter(Boolean);
+        const acctCreated = getTsMs(state.profile && state.profile.createdAt);
+        const earliest = times.length ? Math.min.apply(null, times) : acctCreated;
+        const lastUpdated = times.length ? Math.max.apply(null, times) : acctCreated;
+        const recordDays = earliest ? Math.max(1, Math.ceil((Date.now() - earliest) / 86400000)) : 1;
+
+        const guidance = [];
+        if (totalTrades === 0) {
+          guidance.push({
+            tone: 'info',
+            title: 'Start your verified track record',
+            message: 'Log your first setup in My Journal with Entry, Stop Loss, and Take Profit levels to unlock live Win Rate, Drawdown, and Profit Factor analytics.'
+          });
+        } else {
+          if (closedTrades < 5) {
+            guidance.push({
+              tone: 'warning',
+              title: 'Short track record sample',
+              message: 'Only ' + closedTrades + ' closed trade' + (closedTrades === 1 ? '' : 's') + ' logged so far. Keep lot sizing conservative until you build at least 15-20 closed setups.'
+            });
+          }
+          if (closedTrades >= 3 && (losses / closedTrades) > 0.5) {
+            guidance.push({
+              tone: 'danger',
+              title: 'Elevated Stop Loss hit rate',
+              message: losses + ' of ' + closedTrades + ' closed trades hit SL (' + (100 - winRate).toFixed(0) + '%). Review higher-timeframe structure and avoid chasing breakouts.'
+            });
+          }
+          if (closed.length >= 3 && closed.slice(-3).every(function (t) { return t.status === 'Lost'; })) {
+            guidance.push({
+              tone: 'danger',
+              title: '3-trade losing streak detected',
+              message: 'Cut risk per trade in half on your next position and wait for an A+ confirmation before entering.'
+            });
+          }
+          if (maxDD >= 8) {
+            guidance.push({
+              tone: 'warning',
+              title: 'Drawdown caution (' + maxDD.toFixed(1) + '%)',
+              message: 'Max drawdown is elevated. Cap risk to 0.5%-1% per trade until equity recovers back to peak.'
+            });
+          }
+          if (avgRR > 0 && avgRR < 1.5) {
+            guidance.push({
+              tone: 'warning',
+              title: 'Tight Risk:Reward (1:' + avgRR.toFixed(2) + ')',
+              message: 'Target at least 1:2.0 Risk:Reward on planned setups so winning trades comfortably outweigh stop-outs.'
+            });
+          } else if (avgRR >= 2.0 && winRate >= 50 && closedTrades >= 3) {
+            guidance.push({
+              tone: 'positive',
+              title: 'Strong discipline & Risk:Reward (1:' + avgRR.toFixed(2) + ')',
+              message: 'Consistent execution with ' + winRate.toFixed(1) + '% win rate and ' + profitFactor.toFixed(2) + ' profit factor. Protect capital and stay patient.'
+            });
+          }
+          if ((activeTrades + pendingTrades) >= 4) {
+            guidance.push({
+              tone: 'info',
+              title: (activeTrades + pendingTrades) + ' open / pending setups',
+              message: 'Watch correlated USD exposure (XAUUSD, EURUSD, GBPUSD) so one news spike cannot trigger multiple SLs at once.'
+            });
+          }
+          if (guidance.length === 0) {
+            guidance.push({
+              tone: 'positive',
+              title: 'Balanced risk profile',
+              message: 'Your metrics remain within healthy limits. Continue logging setup notes on every trade to sharpen your edge.'
+            });
+          }
+        }
+
+        return {
+          totalTrades: totalTrades,
+          closedTrades: closedTrades,
+          activeTrades: activeTrades,
+          pendingTrades: pendingTrades,
+          wins: wins,
+          losses: losses,
+          winRate: winRate,
+          profitFactor: profitFactor,
+          growthPercent: growthPercent,
+          maxDrawdownPercent: maxDD,
+          totalLots: totalLots,
+          netPips: netPips,
+          grossWinPips: grossWinPips,
+          grossLossPips: grossLossPips,
+          avgRiskReward: avgRR,
+          recordDays: recordDays,
+          lastUpdatedMs: lastUpdated,
+          currentEquity: equity,
+          equityCurve: curve,
+          guidance: guidance.slice(0, 3)
+        };
+      }
+
+      // =====================================================
+      // 5. AUTH UI & HANDLERS
+      // =====================================================
+      function showView(name) {
+        document.getElementById('view-auth').classList.toggle('hidden', name !== 'auth');
+        document.getElementById('view-blocked').classList.toggle('hidden', name !== 'blocked');
+        document.getElementById('view-app').classList.toggle('hidden', name !== 'app');
+        updateFabVisibility();
+      }
+
+      function showAuthAlert(type, msg) {
+        const errEl = document.getElementById('auth-error');
+        const okEl = document.getElementById('auth-success');
+        errEl.classList.add('hidden');
+        okEl.classList.add('hidden');
+        if (!msg) return;
+        const target = type === 'ok' ? okEl : errEl;
+        target.textContent = msg;
+        target.classList.remove('hidden');
+      }
+
+      window.setAuthMode = function (mode) {
+        state.authMode = mode;
+        showAuthAlert(null, '');
+        document.getElementById('auth-tabs').classList.toggle('hidden', mode === 'reset');
+        document.getElementById('auth-reset-header').classList.toggle('hidden', mode !== 'reset');
+        document.getElementById('auth-tab-login').classList.toggle('active', mode === 'login');
+        document.getElementById('auth-tab-signup').classList.toggle('active', mode === 'signup');
+        document.getElementById('auth-name-wrap').classList.toggle('hidden', mode !== 'signup');
+        document.getElementById('auth-pass-wrap').classList.toggle('hidden', mode === 'reset');
+        document.getElementById('auth-confirm-wrap').classList.toggle('hidden', mode !== 'signup');
+        document.getElementById('auth-forgot-btn').classList.toggle('hidden', mode !== 'login');
+        document.getElementById('auth-password').placeholder = mode === 'signup' ? 'Minimum 6 characters' : 'Enter password';
+        document.getElementById('auth-submit-btn').textContent =
+          mode === 'login' ? 'Access Terminal \u2192' :
+          mode === 'signup' ? 'Create Private Account \u2192' :
+          'Send Reset Email \u2192';
+      };
+
+      window.togglePasswordVisibility = function () {
+        const pw = document.getElementById('auth-password');
+        const cf = document.getElementById('auth-confirm');
+        const nextType = pw.type === 'password' ? 'text' : 'password';
+        pw.type = nextType;
+        if (cf) cf.type = nextType;
+      };
+
+      document.getElementById('auth-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        showAuthAlert(null, '');
+
+        if (!firebaseReady || !auth || !db) {
+          showAuthAlert('err', 'Firebase SDK failed to load. Please check your internet connection and refresh.');
+          return;
+        }
+
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const confirmPw = document.getElementById('auth-confirm').value;
+        const displayName = document.getElementById('auth-name').value.trim();
+        const btn = document.getElementById('auth-submit-btn');
+
+        if (!email) { showAuthAlert('err', 'Please enter your email address.'); return; }
+
+        if (state.authMode === 'login' && !password) {
+          showAuthAlert('err', 'Please enter your password.');
+          return;
+        }
+        if (state.authMode === 'signup') {
+          if (password.length < 6) { showAuthAlert('err', 'Password must be at least 6 characters long.'); return; }
+          if (password !== confirmPw) { showAuthAlert('err', 'Passwords do not match.'); return; }
+        }
+
+        btn.disabled = true;
+        const origLabel = btn.textContent;
+        btn.textContent = 'Please wait...';
+
+        try {
+          if (state.authMode === 'login') {
+            const cred = await auth.signInWithEmailAndPassword(email, password);
+            await ensureUserProfile(cred.user);
+          } else if (state.authMode === 'signup') {
+            const cleanEmail = email.toLowerCase();
+            const cleanName = displayName || cleanEmail.split('@')[0];
+            const cred = await auth.createUserWithEmailAndPassword(cleanEmail, password);
+            await cred.user.updateProfile({ displayName: cleanName });
+            await db.collection('users').doc(cred.user.uid).set({
+              email: cleanEmail,
+              displayName: cleanName,
+              role: isAdminEmail(cleanEmail) ? 'admin' : 'user',
+              isBlocked: false,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          } else if (state.authMode === 'reset') {
+            await auth.sendPasswordResetEmail(email);
+            showAuthAlert('ok', 'Password reset link sent! Check your inbox (and spam folder).');
+          }
+        } catch (err) {
+          showAuthAlert('err', mapAuthError(err));
+        } finally {
+          btn.disabled = false;
+          btn.textContent = origLabel;
+        }
+      });
+
+      window.handleSignOut = async function () {
+        cleanupSubscriptions();
+        state.user = null;
+        state.profile = null;
+        state.isAdmin = false;
+        state.trades = [];
+        state.posts = [];
+        state.allUsers = [];
+        state.marketMounted = false;
+        if (auth) {
+          try { await auth.signOut(); } catch (e) { console.error(e); }
+        }
+        showView('auth');
+      };
+
+      // =====================================================
+      // 6. FIRESTORE SUBSCRIPTIONS & USER PROFILE SYNC
+      // =====================================================
+      function cleanupSubscriptions() {
+        ['unsubProfile', 'unsubTrades', 'unsubPosts', 'unsubUsers'].forEach(function (k) {
+          if (typeof state[k] === 'function') {
+            try { state[k](); } catch (e) {}
+            state[k] = null;
+          }
+        });
+      }
+
+      async function ensureUserProfile(user) {
+        const ref = db.collection('users').doc(user.uid);
+        const cleanEmail = String(user.email || '').trim().toLowerCase();
+        const role = isAdminEmail(cleanEmail) ? 'admin' : 'user';
+        try {
+          const snap = await ref.get();
+          if (snap.exists) {
+            const d = snap.data() || {};
+            return {
+              uid: user.uid,
+              email: d.email || cleanEmail,
+              displayName: d.displayName || user.displayName || cleanEmail.split('@')[0] || 'Trader',
+              role: isAdminEmail(cleanEmail) ? 'admin' : (d.role || 'user'),
+              isBlocked: Boolean(d.isBlocked),
+              createdAt: d.createdAt || null
+            };
+          }
+          const payload = {
+            email: cleanEmail,
+            displayName: user.displayName || cleanEmail.split('@')[0] || 'Trader',
+            role: role,
+            isBlocked: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          await ref.set(payload);
+          return {
+            uid: user.uid,
+            email: payload.email,
+            displayName: payload.displayName,
+            role: role,
+            isBlocked: false,
+            createdAt: null
+          };
+        } catch (err) {
+          console.warn('Profile read/create warning:', err);
+          return {
+            uid: user.uid,
+            email: cleanEmail,
+            displayName: user.displayName || cleanEmail.split('@')[0] || 'Trader',
+            role: role,
+            isBlocked: false,
+            createdAt: null
+          };
+        }
+      }
+
+      function startUserDataStreams(uid) {
+        // Private trades stream (users/{uid}/trades)
+        if (state.unsubTrades) { state.unsubTrades(); state.unsubTrades = null; }
+        const tradesCol = db.collection('users').doc(uid).collection('trades');
+
+        function parseTrades(snap) {
+          const list = snap.docs.map(function (docSnap) {
+            const d = docSnap.data() || {};
+            return {
+              id: docSnap.id,
+              uid: String(d.uid || uid),
+              pair: String(d.pair || 'XAUUSD'),
+              type: d.type || 'BUY',
+              entryPrice: Number(d.entryPrice || 0),
+              stopLoss: Number(d.stopLoss || 0),
+              tp1: Number(d.tp1 || 0),
+              tp2: (d.tp2 !== undefined && d.tp2 !== null && d.tp2 !== '') ? Number(d.tp2) : null,
+              tp3: (d.tp3 !== undefined && d.tp3 !== null && d.tp3 !== '') ? Number(d.tp3) : null,
+              lotSize: Number(d.lotSize || 0.01),
+              status: d.status || 'Pending',
+              pips: Number(d.pips || 0),
+              riskReward: Number(d.riskReward || 0),
+              notes: typeof d.notes === 'string' ? d.notes : '',
+              createdAt: d.createdAt || null
+            };
+          });
+          list.sort(function (a, b) { return getTsMs(b.createdAt) - getTsMs(a.createdAt); });
+          state.trades = list;
+          renderAnalysisTab();
+          renderJournalTab();
+          updateTopbarGrowth();
+        }
+
+        state.unsubTrades = tradesCol.orderBy('createdAt', 'desc').limit(250).onSnapshot(
+          parseTrades,
+          function () {
+            state.unsubTrades = tradesCol.limit(250).onSnapshot(parseTrades, function (e) { console.error(e); });
+          }
+        );
+
+        // Public feed stream (public_posts)
+        if (state.unsubPosts) { state.unsubPosts(); state.unsubPosts = null; }
+        const postsCol = db.collection('public_posts');
+
+        function parsePosts(snap) {
+          const list = snap.docs.map(function (docSnap) {
+            const d = docSnap.data() || {};
+            return {
+              id: docSnap.id,
+              authorUid: String(d.authorUid || ''),
+              authorEmail: String(d.authorEmail || TRADING_ADMIN_EMAIL),
+              authorName: String(d.authorName || 'Desk Admin'),
+              postType: d.postType || 'announcement',
+              title: String(d.title || ''),
+              body: String(d.body || ''),
+              imageUrl: typeof d.imageUrl === 'string' ? d.imageUrl : '',
+              videoUrl: typeof d.videoUrl === 'string' ? d.videoUrl : '',
+              signal: d.signal || null,
+              createdAt: d.createdAt || null
+            };
+          });
+          list.sort(function (a, b) { return getTsMs(b.createdAt) - getTsMs(a.createdAt); });
+          state.posts = list;
+          renderFeedTab();
+        }
+
+        state.unsubPosts = postsCol.orderBy('createdAt', 'desc').limit(100).onSnapshot(
+          parsePosts,
+          function () {
+            state.unsubPosts = postsCol.limit(100).onSnapshot(parsePosts, function (e) { console.error(e); });
+          }
+        );
+
+        // Admin-only all users stream
+        if (state.unsubUsers) { state.unsubUsers(); state.unsubUsers = null; }
+        if (state.isAdmin) {
+          const usersCol = db.collection('users');
+          function parseUsers(snap) {
+            const list = snap.docs.map(function (docSnap) {
+              const d = docSnap.data() || {};
+              const email = String(d.email || '');
+              return {
+                uid: docSnap.id,
+                email: email,
+                displayName: String(d.displayName || email.split('@')[0] || 'Trader'),
+                role: isAdminEmail(email) ? 'admin' : (d.role === 'admin' ? 'admin' : 'user'),
+                isBlocked: Boolean(d.isBlocked),
+                createdAt: d.createdAt || null
+              };
+            });
+            list.sort(function (a, b) { return getTsMs(b.createdAt) - getTsMs(a.createdAt); });
+            state.allUsers = list;
+            renderProfileTab();
+          }
+          state.unsubUsers = usersCol.orderBy('createdAt', 'desc').limit(200).onSnapshot(
+            parseUsers,
+            function () {
+              state.unsubUsers = usersCol.limit(200).onSnapshot(parseUsers, function (e) { console.error(e); });
+            }
+          );
+        }
+      }
+
+      if (firebaseReady && auth) {
+        auth.onAuthStateChanged(async function (user) {
+          cleanupSubscriptions();
+          state.user = user;
+
+          if (!user) {
+            state.profile = null;
+            state.isAdmin = false;
+            showView('auth');
+            return;
+          }
+
+          const initialProfile = await ensureUserProfile(user);
+          applyProfile(initialProfile);
+
+          // Real-time listener on own profile to immediately enforce admin blocking
+          state.unsubProfile = db.collection('users').doc(user.uid).onSnapshot(function (snap) {
+            if (!snap.exists) return;
+            const d = snap.data() || {};
+            const email = d.email || String(user.email || '').toLowerCase();
+            applyProfile({
+              uid: snap.id,
+              email: email,
+              displayName: d.displayName || user.displayName || email.split('@')[0] || 'Trader',
+              role: isAdminEmail(email) ? 'admin' : (d.role || 'user'),
+              isBlocked: Boolean(d.isBlocked),
+              createdAt: d.createdAt || null
+            });
+          }, function (err) { console.warn('Profile listener:', err); });
+        });
+      }
+
+      function applyProfile(profile) {
+        const wasBlockedOrUnloaded = !state.profile || state.profile.isBlocked;
+        state.profile = profile;
+        state.isAdmin = isAdminEmail(profile.email);
+        const blocked = Boolean(profile.isBlocked && !state.isAdmin);
+
+        if (blocked) {
+          if (state.unsubTrades) { state.unsubTrades(); state.unsubTrades = null; }
+          if (state.unsubPosts) { state.unsubPosts(); state.unsubPosts = null; }
+          if (state.unsubUsers) { state.unsubUsers(); state.unsubUsers = null; }
+          document.getElementById('blocked-email').textContent = profile.email;
+          showView('blocked');
+          return;
+        }
+
+        // Active user -> show App Shell
+        document.getElementById('sidebar-user-name').textContent = profile.displayName;
+        document.getElementById('sidebar-user-email').textContent = profile.email;
+        document.getElementById('sidebar-role-label').textContent = state.isAdmin ? 'Administrator Mode' : 'Private Vault';
+        document.getElementById('topbar-admin-badge').classList.toggle('hidden', !state.isAdmin);
+
+        renderNavigation();
+        showView('app');
+        renderAnalysisTab();
+        renderJournalTab();
+        renderFeedTab();
+        renderProfileTab();
+        switchTab(state.activeTab, true);
+
+        if (wasBlockedOrUnloaded || !state.unsubTrades) {
+          startUserDataStreams(profile.uid);
+        }
+      }
+
+      // =====================================================
+      // 7. NAVIGATION (5 TABS: MOBILE BOTTOM + DESKTOP SIDEBAR)
+      // =====================================================
+      const ICONS = {
+        analysis: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+        journal: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+        market: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5v4"/><rect width="4" height="6" x="7" y="9" rx="1"/><path d="M9 15v2"/><path d="M17 3v2"/><rect width="4" height="8" x="15" y="5" rx="1"/><path d="M17 13v3"/><path d="M3 3v18h18"/></svg>',
+        feed: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>',
+        profile: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>',
+        admin: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+      };
+
+      function getNavItems() {
+        return [
+          { id: 'analysis', label: 'Analysis', shortLabel: 'Analysis', icon: ICONS.analysis },
+          { id: 'journal', label: 'My Journal', shortLabel: 'Journal', icon: ICONS.journal },
+          { id: 'market', label: 'Live Market', shortLabel: 'Market', icon: ICONS.market },
+          { id: 'feed', label: 'Admin Feed', shortLabel: 'Feed', icon: ICONS.feed },
+          { id: 'profile', label: state.isAdmin ? 'Admin Panel' : 'Profile', shortLabel: state.isAdmin ? 'Admin' : 'Profile', icon: state.isAdmin ? ICONS.admin : ICONS.profile }
+        ];
+      }
+
+      function renderNavigation() {
+        const items = getNavItems();
+        document.getElementById('sidebar-nav').innerHTML = items.map(function (it) {
+          return '<button type="button" class="tr-nav-btn tr-press ' + (state.activeTab === it.id ? 'active' : '') + '" onclick="switchTab(\'' + it.id + '\')">' +
+            it.icon + '<span>' + esc(it.label) + '</span></button>';
+        }).join('');
+
+        document.getElementById('bottom-nav').innerHTML = items.map(function (it) {
+          return '<button type="button" class="tr-bottom-item tr-press ' + (state.activeTab === it.id ? 'active' : '') + '" onclick="switchTab(\'' + it.id + '\')">' +
+            it.icon + '<span>' + esc(it.shortLabel) + '</span></button>';
+        }).join('');
+      }
+
+      function updateFabVisibility() {
+        const appVisible = !document.getElementById('view-app').classList.contains('hidden');
+        document.getElementById('journal-fab').classList.toggle('hidden', !(appVisible && state.activeTab === 'journal'));
+      }
+
+      function updateTopbarGrowth() {
+        const a = computeAnalytics();
+        const el = document.getElementById('topbar-growth');
+        if (!el) return;
+        el.textContent = (a.growthPercent >= 0 ? '+' : '') + a.growthPercent.toFixed(1) + '%';
+        el.style.color = a.growthPercent >= 0 ? '#6EE7B7' : '#FCA5A5';
+      }
+
+      window.switchTab = function (tabId, skipScroll) {
+        state.activeTab = tabId;
+        ['analysis', 'journal', 'market', 'feed', 'profile'].forEach(function (id) {
+          document.getElementById('tab-' + id).classList.toggle('hidden', id !== tabId);
+        });
+        const meta = getNavItems().find(function (i) { return i.id === tabId; });
+        if (meta) document.getElementById('topbar-title').textContent = meta.label;
+        renderNavigation();
+        updateFabVisibility();
+
+        if (tabId === 'market' && !state.marketMounted) {
+          renderMarketTab();
+        }
+        if (!skipScroll) window.scrollTo({ top: 0, behavior: 'instant' });
+      };
+
+      // =====================================================
+      // 8. TAB 1 — ACCOUNT ANALYSIS
+      // =====================================================
+      function buildSparklineSVG(points, positive) {
+        const pts = points.length >= 2 ? points : [points[0] || 10000, points[0] || 10000];
+        const min = Math.min.apply(null, pts);
+        const max = Math.max.apply(null, pts);
+        const range = (max - min) || 1;
+        const w = 480, h = 110, padY = 12;
+        const coords = pts.map(function (v, idx) {
+          const x = (idx / Math.max(1, pts.length - 1)) * w;
+          const y = h - padY - ((v - min) / range) * (h - padY * 2);
+          return x.toFixed(1) + ',' + y.toFixed(1);
+        });
+        const line = 'M ' + coords.join(' L ');
+        const area = line + ' L ' + w + ',' + h + ' L 0,' + h + ' Z';
+        const stroke = positive ? '#10B981' : '#EF4444';
+        const gid = positive ? 'trEqPos' : 'trEqNeg';
+        return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="width:100%;height:110px;display:block;">' +
+          '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="' + stroke + '" stop-opacity="0.28"/>' +
+          '<stop offset="100%" stop-color="' + stroke + '" stop-opacity="0"/></linearGradient></defs>' +
+          '<path d="' + area + '" fill="url(#' + gid + ')"/>' +
+          '<path d="' + line + '" fill="none" stroke="' + stroke + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+
+      function renderAnalysisTab() {
+        if (!state.profile) return;
+        const p = state.profile;
+        const a = computeAnalytics();
+        const pos = a.growthPercent >= 0;
+        const winShare = a.closedTrades > 0 ? Math.round((a.wins / a.closedTrades) * 100) : 0;
+        const lossShare = a.closedTrades > 0 ? (100 - winShare) : 0;
+        const initials = (p.displayName || p.email || 'T').split(/\s+/).slice(0, 2).map(function (s) { return (s[0] || '').toUpperCase(); }).join('');
+
+        const guidanceHTML = a.guidance.map(function (g) {
+          const styles = g.tone === 'positive'
+            ? { bg: 'var(--tr-buy-soft)', bd: 'var(--tr-buy-border)', col: '#6EE7B7' }
+            : g.tone === 'danger'
+            ? { bg: 'var(--tr-sell-soft)', bd: 'var(--tr-sell-border)', col: '#FCA5A5' }
+            : g.tone === 'warning'
+            ? { bg: 'var(--tr-amber-soft)', bd: 'var(--tr-amber-border)', col: '#FCD34D' }
+            : { bg: 'var(--tr-blue-soft)', bd: 'rgba(56,189,248,0.3)', col: '#7DD3FC' };
+
+          return '<div style="padding:12px 14px;border-radius:12px;background:' + styles.bg + ';border:1px solid ' + styles.bd + ';">' +
+            '<div style="font-size:13.5px;font-weight:700;color:#F8FAFC;">' + esc(g.title) + '</div>' +
+            '<div style="font-size:12.5px;color:var(--tr-text-secondary);margin-top:2px;">' + esc(g.message) + '</div></div>';
+        }).join('');
+
+        document.getElementById('tab-analysis').innerHTML =
+          // Account Header Card
+          '<div class="tr-card" style="padding:20px;">' +
+            '<div class="tr-flex-between">' +
+              '<div style="display:flex;align-items:center;gap:14px;min-width:0;">' +
+                '<div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,rgba(16,185,129,0.22),rgba(20,184,166,0.12));border:1px solid var(--tr-buy-border);display:flex;align-items:center;justify-content:center;color:#6EE7B7;font-weight:800;font-size:16px;flex-shrink:0;">' + esc(initials) + '</div>' +
+                '<div style="min-width:0;">' +
+                  '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">' +
+                    '<h1 style="margin:0;font-size:19px;font-weight:800;color:#F8FAFC;">' + esc(p.displayName) + '</h1>' +
+                    '<span class="tr-pill" style="background:var(--tr-buy-soft);border:1px solid var(--tr-buy-border);color:#6EE7B7;">&#10003; Up to date</span>' +
+                  '</div>' +
+                  '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:4px;">' +
+                    'Active record: <strong style="color:var(--tr-text-secondary);">' + a.recordDays + 'd</strong> &middot; Updated ' + esc(formatShortTime(a.lastUpdatedMs)) +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<button type="button" class="tr-btn tr-btn-primary tr-btn-sm tr-press" onclick="switchTab(\'journal\');openTradeModal();">+ Log Trade</button>' +
+            '</div>' +
+
+            '<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--tr-border);display:flex;flex-direction:column;gap:14px;">' +
+              '<div class="tr-flex-between" style="align-items:baseline;">' +
+                '<div>' +
+                  '<div style="font-size:12px;color:var(--tr-muted);font-weight:600;">Account Growth (Base $' + state.baseEquity.toLocaleString() + ')</div>' +
+                  '<div class="tr-mono" style="font-size:30px;font-weight:800;letter-spacing:-0.03em;color:' + (pos ? 'var(--tr-buy)' : 'var(--tr-sell)') + ';margin-top:2px;">' +
+                    (pos ? '+' : '') + a.growthPercent.toFixed(2) + '%' +
+                  '</div>' +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                  '<div style="font-size:12px;color:var(--tr-muted);font-weight:600;">Estimated Equity</div>' +
+                  '<div class="tr-mono" style="font-size:18px;font-weight:700;color:#F8FAFC;margin-top:2px;">$' + a.currentEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>' +
+                  '<div class="tr-mono" style="font-size:12px;color:' + (a.netPips >= 0 ? '#6EE7B7' : '#FCA5A5') + ';">' + (a.netPips >= 0 ? '+' : '') + a.netPips + ' net pips</div>' +
+                '</div>' +
+              '</div>' +
+              '<div style="border-radius:12px;overflow:hidden;background:rgba(11,15,23,0.75);border:1px solid var(--tr-border);padding:8px 6px 0;">' +
+                buildSparklineSVG(a.equityCurve, pos) +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          // Smart Rule-Based Guidance Box
+          '<div class="tr-card">' +
+            '<div class="tr-flex-between" style="margin-bottom:12px;">' +
+              '<div style="font-size:14px;font-weight:800;color:#F8FAFC;">Desk Discipline Guidance</div>' +
+              '<span style="font-size:11.5px;color:var(--tr-muted);">Auto-analyzed from your journal</span>' +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:10px;">' + guidanceHTML + '</div>' +
+          '</div>' +
+
+          // Stat Cards Grid
+          '<div class="tr-stats-grid">' +
+            statCard('Growth %', (pos ? '+' : '') + a.growthPercent.toFixed(2) + '%', a.closedTrades + ' closed trades', pos ? 'var(--tr-buy)' : 'var(--tr-sell)') +
+            statCard('Max Drawdown', '-' + a.maxDrawdownPercent.toFixed(2) + '%', 'Peak-to-trough', a.maxDrawdownPercent > 8 ? 'var(--tr-sell)' : '#F8FAFC') +
+            statCard('Win Rate', a.winRate.toFixed(1) + '%', 'Avg R:R 1:' + a.avgRiskReward.toFixed(2), a.winRate >= 50 ? 'var(--tr-buy)' : '#F8FAFC') +
+            statCard('Profit Factor', a.profitFactor.toFixed(2), 'Gross win / loss', a.profitFactor >= 1.5 ? 'var(--tr-buy)' : '#F8FAFC') +
+            statCard('Total Lots', a.totalLots.toFixed(2), 'Logged volume', '#F8FAFC') +
+            statCard('Total Trades', String(a.totalTrades), a.activeTrades + ' active &middot; ' + a.pendingTrades + ' pending', '#F8FAFC') +
+            '<div class="tr-card" style="grid-column:span 2;">' +
+              '<div class="tr-flex-between" style="font-size:12px;font-weight:600;color:var(--tr-muted);">' +
+                '<span>Wins vs. Stop Losses (SL)</span>' +
+                '<span class="tr-mono" style="color:var(--tr-text-secondary);">+' + a.grossWinPips + ' / -' + a.grossLossPips + ' pips</span>' +
+              '</div>' +
+              '<div class="tr-flex-between" style="margin:10px 0;">' +
+                '<div style="display:flex;align-items:baseline;gap:8px;"><span class="tr-mono" style="font-size:24px;font-weight:800;color:var(--tr-buy);">' + a.wins + '</span><span style="font-size:12.5px;font-weight:600;color:#6EE7B7;">Wins (' + winShare + '%)</span></div>' +
+                '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:12.5px;font-weight:600;color:#FCA5A5;">SL Hits (' + lossShare + '%)</span><span class="tr-mono" style="font-size:24px;font-weight:800;color:var(--tr-sell);">' + a.losses + '</span></div>' +
+              '</div>' +
+              '<div style="height:10px;width:100%;border-radius:99px;overflow:hidden;background:rgba(148,163,184,0.14);display:flex;">' +
+                (a.closedTrades > 0
+                  ? '<div style="width:' + winShare + '%;background:linear-gradient(90deg,#10B981,#14B8A6);"></div><div style="width:' + lossShare + '%;background:#EF4444;"></div>'
+                  : '') +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }
+
+      function statCard(label, val, sub, color) {
+        return '<div class="tr-card">' +
+          '<div style="font-size:12px;font-weight:600;color:var(--tr-muted);">' + label + '</div>' +
+          '<div class="tr-mono" style="font-size:22px;font-weight:800;margin-top:8px;color:' + color + ';">' + val + '</div>' +
+          '<div style="font-size:11.5px;color:var(--tr-muted);margin-top:4px;">' + sub + '</div></div>';
+      }
+
+      // =====================================================
+      // 9. TAB 2 — PRIVATE TRADING JOURNAL & SIGNALS
+      // =====================================================
+      function renderJournalTab() {
+        const container = document.getElementById('tab-journal');
+        const q = state.journalSearch.trim().toLowerCase();
+        const filtered = state.trades.filter(function (t) {
+          if (state.journalFilter !== 'All' && t.status !== state.journalFilter) return false;
+          if (!q) return true;
+          return t.pair.toLowerCase().includes(q) || t.type.toLowerCase().includes(q) || (t.notes || '').toLowerCase().includes(q);
+        });
+
+        const filterButtons = ['All', 'Active', 'Pending', 'Won', 'Lost'].map(function (st) {
+          return '<button type="button" class="tr-seg-btn tr-press ' + (state.journalFilter === st ? 'active' : '') + '" onclick="setJournalFilter(\'' + st + '\')">' + st + '</button>';
+        }).join('');
+
+        let cardsHTML = '';
+        if (filtered.length === 0) {
+          cardsHTML =
+            '<div class="tr-card" style="text-align:center;padding:44px 20px;">' +
+              '<div style="font-size:16px;font-weight:700;color:#F8FAFC;">' + (state.trades.length === 0 ? 'No trades logged yet' : 'No trades match your filter') + '</div>' +
+              '<p style="font-size:13px;color:var(--tr-muted);margin:6px auto 18px;max-width:340px;">' +
+                (state.trades.length === 0
+                  ? 'Tap the + button to record your first BUY or SELL setup with Entry, SL, and TP targets.'
+                  : 'Try switching the status filter or clearing your search query.') +
+              '</p>' +
+              (state.trades.length === 0 ? '<button type="button" class="tr-btn tr-btn-primary tr-press" onclick="openTradeModal()">+ Log First Setup</button>' : '') +
+            '</div>';
+        } else {
+          cardsHTML = '<div class="tr-signals-grid">' + filtered.map(function (t) {
+            const isBuy = String(t.type).indexOf('BUY') === 0;
+            const rr = t.riskReward > 0 ? t.riskReward : calcRR(t.entryPrice, t.stopLoss, t.tp1, t.type);
+            const chartOpen = Boolean(state.expandedCharts[t.id]);
+            const stStyle = t.status === 'Won'
+              ? 'background:var(--tr-buy-soft);border:1px solid var(--tr-buy-border);color:#6EE7B7;'
+              : t.status === 'Lost'
+              ? 'background:var(--tr-sell-soft);border:1px solid var(--tr-sell-border);color:#FCA5A5;'
+              : t.status === 'Active'
+              ? 'background:var(--tr-blue-soft);border:1px solid rgba(56,189,248,0.34);color:#7DD3FC;'
+              : 'background:var(--tr-amber-soft);border:1px solid var(--tr-amber-border);color:#FCD34D;';
+
+            const deleteControls = state.confirmDeleteTradeId === t.id
+              ? '<button type="button" class="tr-btn tr-btn-danger tr-btn-sm tr-press" onclick="deleteTrade(\'' + esc(t.id) + '\')">Confirm</button>' +
+                '<button type="button" class="tr-btn tr-btn-sm tr-press" onclick="cancelDeleteTrade()">Cancel</button>'
+              : '<button type="button" class="tr-btn tr-btn-sm tr-press" onclick="openTradeModal(\'' + esc(t.id) + '\')">Edit</button>' +
+                '<button type="button" class="tr-btn tr-btn-sm tr-press" style="color:#FCA5A5;" onclick="askDeleteTrade(\'' + esc(t.id) + '\')">Delete</button>';
+
+            return '<article class="tr-card tr-stack">' +
+              '<div class="tr-flex-between">' +
+                '<div style="display:flex;align-items:center;gap:10px;">' +
+                  '<span class="tr-mono" style="font-size:16px;font-weight:800;color:#F8FAFC;">' + esc(t.pair) + '</span>' +
+                  '<span class="tr-badge" style="background:' + (isBuy ? 'var(--tr-buy-soft)' : 'var(--tr-sell-soft)') + ';border:1px solid ' + (isBuy ? 'var(--tr-buy-border)' : 'var(--tr-sell-border)') + ';color:' + (isBuy ? '#6EE7B7' : '#FCA5A5') + ';">' + esc(t.type) + '</span>' +
+                '</div>' +
+                '<span class="tr-pill" style="' + stStyle + '">' + esc(t.status) + '</span>' +
+              '</div>' +
+
+              '<div class="tr-price-grid">' +
+                '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">ENTRY</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;">' + t.entryPrice + '</span></div>' +
+                '<div class="tr-price-cell" style="border-color:rgba(239,68,68,0.28);"><span style="font-size:10px;font-weight:700;color:#FCA5A5;">SL</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#FCA5A5;">' + t.stopLoss + '</span></div>' +
+                '<div class="tr-price-cell" style="border-color:rgba(16,185,129,0.28);"><span style="font-size:10px;font-weight:700;color:#6EE7B7;">TP1</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#6EE7B7;">' + t.tp1 + '</span></div>' +
+                '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">TP2</span><span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (t.tp2 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (t.tp2 != null ? t.tp2 : '&mdash;') + '</span></div>' +
+                '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">TP3</span><span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (t.tp3 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (t.tp3 != null ? t.tp3 : '&mdash;') + '</span></div>' +
+              '</div>' +
+
+              '<div class="tr-flex-between" style="font-size:12.5px;color:var(--tr-muted);">' +
+                '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">' +
+                  '<span>Lot <strong class="tr-mono" style="color:#F8FAFC;">' + Number(t.lotSize).toFixed(2) + '</strong></span>' +
+                  '<span>&middot;</span>' +
+                  '<span>R:R <strong class="tr-mono" style="color:#F8FAFC;">1:' + rr.toFixed(2) + '</strong></span>' +
+                  '<span>&middot;</span>' +
+                  '<span class="tr-mono" style="font-weight:700;color:' + (t.pips > 0 ? 'var(--tr-buy)' : t.pips < 0 ? 'var(--tr-sell)' : 'var(--tr-text-secondary)') + ';">' + (t.pips > 0 ? '+' + t.pips : t.pips) + ' pips</span>' +
+                '</div>' +
+                '<span style="font-size:11.5px;">' + esc(formatShortTime(t.createdAt)) + '</span>' +
+              '</div>' +
+
+              (t.notes ? '<p style="margin:0;font-size:12.5px;color:var(--tr-text-secondary);background:rgba(11,15,23,0.58);padding:10px 12px;border-radius:10px;border:1px solid var(--tr-border);">' + esc(t.notes) + '</p>' : '') +
+
+              (chartOpen ? '<div id="mini-chart-' + esc(t.id) + '" style="width:100%;height:210px;border-radius:12px;overflow:hidden;border:1px solid var(--tr-border);background:#0B0F17;"></div>' : '') +
+
+              '<div class="tr-flex-between" style="padding-top:10px;border-top:1px solid var(--tr-border);">' +
+                '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+                  '<button type="button" class="tr-btn tr-btn-sm tr-press" onclick="toggleMiniChart(\'' + esc(t.id) + '\')">' + (chartOpen ? 'Hide Chart' : 'Chart') + '</button>' +
+                  (t.status !== 'Won' ? '<button type="button" class="tr-btn tr-btn-buy tr-btn-sm tr-press" onclick="quickStatus(\'' + esc(t.id) + '\',\'Won\')">Hit TP</button>' : '') +
+                  (t.status !== 'Lost' ? '<button type="button" class="tr-btn tr-btn-danger tr-btn-sm tr-press" onclick="quickStatus(\'' + esc(t.id) + '\',\'Lost\')">Hit SL</button>' : '') +
+                '</div>' +
+                '<div style="display:flex;gap:6px;">' + deleteControls + '</div>' +
+              '</div>' +
+            '</article>';
+          }).join('') + '</div>';
+        }
+
+        container.innerHTML =
+          '<div class="tr-flex-between">' +
+            '<div>' +
+              '<h1 style="margin:0;font-size:20px;font-weight:800;color:#F8FAFC;">Private Trading Journal</h1>' +
+              '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">' + state.trades.length + ' private signal' + (state.trades.length === 1 ? '' : 's') + ' &middot; Visible only to your account</div>' +
+            '</div>' +
+            '<button type="button" class="tr-btn tr-btn-primary tr-btn-sm tr-press" onclick="openTradeModal()">+ New Signal</button>' +
+          '</div>' +
+
+          '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">' +
+            '<div class="tr-segmented">' + filterButtons + '</div>' +
+            '<input id="journal-search-input" type="search" class="tr-input" style="flex:1 1 200px;min-height:42px;" placeholder="Search pair or notes..." value="' + esc(state.journalSearch) + '">' +
+          '</div>' +
+          cardsHTML;
+
+        const searchEl = document.getElementById('journal-search-input');
+        if (searchEl) {
+          searchEl.addEventListener('input', function (ev) {
+            state.journalSearch = ev.target.value;
+            renderJournalTab();
+            const restored = document.getElementById('journal-search-input');
+            if (restored) { restored.focus(); restored.setSelectionRange(restored.value.length, restored.value.length); }
+          });
+        }
+
+        // Mount expanded TradingView mini-charts
+        filtered.forEach(function (t) {
+          if (state.expandedCharts[t.id]) {
+            mountMiniChart('mini-chart-' + t.id, t.pair);
+          }
+        });
+      }
+
+      function mountMiniChart(elId, pair) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.innerHTML = '';
+        const slot = document.createElement('div');
+        slot.className = 'tradingview-widget-container__widget';
+        el.appendChild(slot);
+        const s = document.createElement('script');
+        s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+        s.async = true;
+        s.innerHTML = JSON.stringify({
+          symbol: toTVSymbol(pair),
+          width: '100%',
+          height: 210,
+          locale: 'en',
+          dateRange: '1M',
+          colorTheme: 'dark',
+          isTransparent: true,
+          autosize: false,
+          noTimeScale: false
+        });
+        el.appendChild(s);
+      }
+
+      window.setJournalFilter = function (f) { state.journalFilter = f; renderJournalTab(); };
+      window.toggleMiniChart = function (id) { state.expandedCharts[id] = !state.expandedCharts[id]; renderJournalTab(); };
+      window.askDeleteTrade = function (id) { state.confirmDeleteTradeId = id; renderJournalTab(); };
+      window.cancelDeleteTrade = function () { state.confirmDeleteTradeId = null; renderJournalTab(); };
+
+      window.quickStatus = async function (tradeId, nextStatus) {
+        if (!state.profile || !db) return;
+        const t = state.trades.find(function (x) { return x.id === tradeId; });
+        if (!t) return;
+        let nextPips = t.pips;
+        if (nextStatus === 'Won' && (!nextPips || nextPips <= 0)) {
+          nextPips = estimatePips(t.pair, t.entryPrice, t.tp1);
+        } else if (nextStatus === 'Lost') {
+          const slP = estimatePips(t.pair, t.entryPrice, t.stopLoss);
+          nextPips = slP > 0 ? -slP : -Math.abs(nextPips || 0);
+        }
+        try {
+          await db.collection('users').doc(state.profile.uid).collection('trades').doc(tradeId).update({
+            status: nextStatus,
+            pips: nextPips,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } catch (err) { console.error(err); }
+      };
+
+      window.deleteTrade = async function (tradeId) {
+        if (!state.profile || !db) return;
+        try {
+          await db.collection('users').doc(state.profile.uid).collection('trades').doc(tradeId).delete();
+          state.confirmDeleteTradeId = null;
+        } catch (err) { console.error(err); }
+      };
+
+      // Trade Modal Logic
+      function renderTradeModalControls() {
+        const currentPair = document.getElementById('tf-pair').value.trim().toUpperCase();
+        document.getElementById('tf-pair-presets').innerHTML = POPULAR_PAIRS.map(function (p) {
+          const active = p === currentPair;
+          return '<button type="button" class="tr-seg-btn tr-mono tr-press" style="min-height:32px;padding:4px 10px;border:1px solid ' +
+            (active ? 'var(--tr-buy-border)' : 'var(--tr-border)') + ';background:' +
+            (active ? 'var(--tr-buy-soft)' : 'rgba(11,15,23,0.7)') + ';color:' +
+            (active ? '#6EE7B7' : 'var(--tr-muted)') + ';" onclick="selectTradePair(\'' + p + '\')">' + p + '</button>';
+        }).join('');
+
+        document.getElementById('tf-dir-buttons').innerHTML = DIRECTIONS.map(function (d) {
+          const active = state.tradeFormDirection === d;
+          const isBuy = d.indexOf('BUY') === 0;
+          return '<button type="button" class="tr-btn tr-btn-sm tr-press" style="border-color:' +
+            (active ? (isBuy ? 'var(--tr-buy-border)' : 'var(--tr-sell-border)') : 'var(--tr-border)') + ';background:' +
+            (active ? (isBuy ? 'var(--tr-buy-soft)' : 'var(--tr-sell-soft)') : 'rgba(11,15,23,0.7)') + ';color:' +
+            (active ? (isBuy ? '#6EE7B7' : '#FCA5A5') : 'var(--tr-muted)') + ';" onclick="selectTradeDirection(\'' + d + '\')">' + d + '</button>';
+        }).join('');
+      }
+
+      function updateTradeRRPreview() {
+        const pair = document.getElementById('tf-pair').value;
+        const entry = parseFloat(document.getElementById('tf-entry').value);
+        const sl = parseFloat(document.getElementById('tf-sl').value);
+        const tp1 = parseFloat(document.getElementById('tf-tp1').value);
+        const rr = calcRR(entry, sl, tp1, state.tradeFormDirection);
+        const slP = estimatePips(pair, entry, sl);
+        const tpP = estimatePips(pair, entry, tp1);
+
+        const rrEl = document.getElementById('tf-rr-preview');
+        rrEl.textContent = rr > 0 ? ('1 : ' + rr.toFixed(2)) : '\u2014';
+        rrEl.style.color = rr >= 2 ? 'var(--tr-buy)' : rr > 0 ? 'var(--tr-amber)' : 'var(--tr-muted)';
+        document.getElementById('tf-sl-pips').textContent = 'SL risk: ' + slP + ' pips';
+        document.getElementById('tf-tp-pips').textContent = 'TP1 reward: +' + tpP + ' pips';
+      }
+
+      window.selectTradePair = function (p) {
+        document.getElementById('tf-pair').value = p;
+        renderTradeModalControls();
+        updateTradeRRPreview();
+      };
+      window.selectTradeDirection = function (d) {
+        state.tradeFormDirection = d;
+        renderTradeModalControls();
+        updateTradeRRPreview();
+      };
+
+      ['tf-pair', 'tf-entry', 'tf-sl', 'tf-tp1'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', function () {
+          if (id === 'tf-pair') renderTradeModalControls();
+          updateTradeRRPreview();
+        });
+      });
+
+      document.getElementById('tf-status').addEventListener('change', function (e) {
+        const st = e.target.value;
+        const pair = document.getElementById('tf-pair').value;
+        const entry = parseFloat(document.getElementById('tf-entry').value);
+        const sl = parseFloat(document.getElementById('tf-sl').value);
+        const tp1 = parseFloat(document.getElementById('tf-tp1').value);
+        if (st === 'Won') {
+          const tpP = estimatePips(pair, entry, tp1);
+          if (tpP > 0) document.getElementById('tf-pips').value = String(tpP);
+        } else if (st === 'Lost') {
+          const slP = estimatePips(pair, entry, sl);
+          if (slP > 0) document.getElementById('tf-pips').value = String(-slP);
+        }
+      });
+
+      window.openTradeModal = function (tradeId) {
+        const errEl = document.getElementById('trade-form-err');
+        errEl.classList.add('hidden');
+        state.editingTradeId = tradeId || null;
+
+        if (tradeId) {
+          const t = state.trades.find(function (x) { return x.id === tradeId; });
+          if (t) {
+            document.getElementById('trade-modal-title').textContent = 'Edit Trade Signal';
+            document.getElementById('tf-save-btn').textContent = 'Save Changes';
+            document.getElementById('tf-pair').value = t.pair;
+            state.tradeFormDirection = t.type;
+            document.getElementById('tf-entry').value = t.entryPrice;
+            document.getElementById('tf-sl').value = t.stopLoss;
+            document.getElementById('tf-tp1').value = t.tp1;
+            document.getElementById('tf-tp2').value = t.tp2 != null ? t.tp2 : '';
+            document.getElementById('tf-tp3').value = t.tp3 != null ? t.tp3 : '';
+            document.getElementById('tf-lots').value = t.lotSize;
+            document.getElementById('tf-status').value = t.status;
+            document.getElementById('tf-pips').value = t.pips;
+            document.getElementById('tf-notes').value = t.notes || '';
+          }
+        } else {
+          document.getElementById('trade-modal-title').textContent = 'Log Private Trade Signal';
+          document.getElementById('tf-save-btn').textContent = 'Save Trade Signal';
+          document.getElementById('tf-pair').value = 'XAUUSD';
+          state.tradeFormDirection = 'BUY';
+          document.getElementById('tf-entry').value = '';
+          document.getElementById('tf-sl').value = '';
+          document.getElementById('tf-tp1').value = '';
+          document.getElementById('tf-tp2').value = '';
+          document.getElementById('tf-tp3').value = '';
+          document.getElementById('tf-lots').value = '0.10';
+          document.getElementById('tf-status').value = 'Active';
+          document.getElementById('tf-pips').value = '0';
+          document.getElementById('tf-notes').value = '';
+        }
+
+        renderTradeModalControls();
+        updateTradeRRPreview();
+        document.getElementById('trade-modal').classList.remove('hidden');
+      };
+
+      window.closeTradeModal = function () {
+        document.getElementById('trade-modal').classList.add('hidden');
+      };
+
+      document.getElementById('trade-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!state.profile || !db) return;
+        const errEl = document.getElementById('trade-form-err');
+        errEl.classList.add('hidden');
+
+        const pair = document.getElementById('tf-pair').value.trim().toUpperCase().slice(0, 20);
+        const entryPrice = parseFloat(document.getElementById('tf-entry').value);
+        const stopLoss = parseFloat(document.getElementById('tf-sl').value);
+        const tp1 = parseFloat(document.getElementById('tf-tp1').value);
+        const tp2Raw = document.getElementById('tf-tp2').value.trim();
+        const tp3Raw = document.getElementById('tf-tp3').value.trim();
+        const tp2 = tp2Raw ? parseFloat(tp2Raw) : null;
+        const tp3 = tp3Raw ? parseFloat(tp3Raw) : null;
+        const lotSize = parseFloat(document.getElementById('tf-lots').value);
+        const status = document.getElementById('tf-status').value;
+        let pips = parseFloat(document.getElementById('tf-pips').value);
+        const notes = document.getElementById('tf-notes').value.trim().slice(0, 1000);
+
+        if (!pair || isNaN(entryPrice) || isNaN(stopLoss) || isNaN(tp1)) {
+          errEl.textContent = 'Pair, Entry Price, Stop Loss, and TP1 must be valid numbers.';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        if (isNaN(lotSize) || lotSize <= 0) {
+          errEl.textContent = 'Lot size must be greater than 0.';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        if (isNaN(pips)) pips = 0;
+        if (status === 'Won' && pips === 0) pips = estimatePips(pair, entryPrice, tp1);
+        else if (status === 'Lost' && pips === 0) pips = -estimatePips(pair, entryPrice, stopLoss);
+        else if (status === 'Lost' && pips > 0) pips = -Math.abs(pips);
+
+        const riskReward = calcRR(entryPrice, stopLoss, tp1, state.tradeFormDirection);
+        const saveBtn = document.getElementById('tf-save-btn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        const payload = {
+          uid: state.profile.uid,
+          pair: pair,
+          type: state.tradeFormDirection,
+          entryPrice: entryPrice,
+          stopLoss: stopLoss,
+          tp1: tp1,
+          tp2: tp2,
+          tp3: tp3,
+          lotSize: lotSize,
+          status: status,
+          pips: pips,
+          riskReward: riskReward,
+          notes: notes,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        try {
+          const col = db.collection('users').doc(state.profile.uid).collection('trades');
+          if (state.editingTradeId) {
+            await col.doc(state.editingTradeId).update(payload);
+          } else {
+            payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            await col.add(payload);
+          }
+          closeTradeModal();
+        } catch (err) {
+          errEl.textContent = err && err.message ? err.message : 'Unable to save trade signal.';
+          errEl.classList.remove('hidden');
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = state.editingTradeId ? 'Save Changes' : 'Save Trade Signal';
+        }
+      });
+
+      // =====================================================
+      // 10. TAB 3 — LIVE MARKET PRICES (TRADINGVIEW)
+      // =====================================================
+      function renderMarketTab() {
+        state.marketMounted = true;
+        const activeInst = MARKET_INSTRUMENTS.find(function (m) { return m.tvSymbol === state.marketSymbol; }) || MARKET_INSTRUMENTS[0];
+
+        const tfButtons = TIMEFRAMES.map(function (tf) {
+          return '<button type="button" class="tr-seg-btn tr-mono tr-press ' + (state.marketInterval === tf.value ? 'active' : '') + '" style="min-height:34px;padding:4px 10px;" onclick="setMarketInterval(\'' + tf.value + '\')">' + tf.label + '</button>';
+        }).join('');
+
+        const pairButtons = MARKET_INSTRUMENTS.map(function (inst) {
+          const active = inst.tvSymbol === state.marketSymbol;
+          return '<button type="button" class="tr-press" onclick="setMarketSymbol(\'' + inst.tvSymbol + '\')" style="display:flex;flex-direction:column;align-items:flex-start;min-width:104px;padding:10px 13px;border-radius:12px;border:1px solid ' +
+            (active ? 'var(--tr-buy-border)' : 'var(--tr-border)') + ';background:' +
+            (active ? 'var(--tr-buy-soft)' : 'var(--tr-surface-glass)') + ';cursor:pointer;flex-shrink:0;">' +
+            '<span class="tr-mono" style="font-size:13.5px;font-weight:800;color:' + (active ? '#6EE7B7' : '#F8FAFC') + ';">' + inst.symbol + '</span>' +
+            '<span style="font-size:11px;color:var(--tr-muted);margin-top:1px;">' + inst.label + '</span></button>';
+        }).join('');
+
+        document.getElementById('tab-market').innerHTML =
+          '<div id="tv-ticker-slot" class="tradingview-widget-container" style="width:100%;min-height:46px;overflow:hidden;border-radius:12px;border:1px solid var(--tr-border);background:rgba(13,19,31,0.92);"></div>' +
+          '<div class="tr-flex-between">' +
+            '<div>' +
+              '<h1 style="margin:0;font-size:19px;font-weight:800;color:#F8FAFC;">Live Market Prices</h1>' +
+              '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">' + esc(activeInst.label) + ' (' + esc(activeInst.symbol) + ') &middot; Real-time TradingView stream</div>' +
+            '</div>' +
+            '<div class="tr-segmented">' + tfButtons + '</div>' +
+          '</div>' +
+          '<div class="tr-scroll-x" style="display:flex;gap:8px;padding-bottom:2px;">' + pairButtons + '</div>' +
+          '<div id="tv-chart-slot" class="tradingview-widget-container" style="width:100%;height:540px;border-radius:14px;overflow:hidden;border:1px solid var(--tr-border);background:#0B0F17;"></div>';
+
+        // Mount TradingView Ticker Tape
+        const tickerEl = document.getElementById('tv-ticker-slot');
+        const tickerWidget = document.createElement('div');
+        tickerWidget.className = 'tradingview-widget-container__widget';
+        tickerEl.appendChild(tickerWidget);
+        const tickerScript = document.createElement('script');
+        tickerScript.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
+        tickerScript.async = true;
+        tickerScript.innerHTML = JSON.stringify({
+          symbols: [
+            { proName: 'OANDA:XAUUSD', title: 'Gold / USD' },
+            { proName: 'OANDA:XAGUSD', title: 'Silver / USD' },
+            { proName: 'OANDA:EURUSD', title: 'EUR / USD' },
+            { proName: 'OANDA:GBPUSD', title: 'GBP / USD' },
+            { proName: 'OANDA:USDJPY', title: 'USD / JPY' },
+            { proName: 'OANDA:GBPJPY', title: 'GBP / JPY' },
+            { proName: 'OANDA:AUDUSD', title: 'AUD / USD' },
+            { proName: 'BITSTAMP:BTCUSD', title: 'BTC / USD' }
+          ],
+          showSymbolLogo: true,
+          isTransparent: true,
+          displayMode: 'adaptive',
+          colorTheme: 'dark',
+          locale: 'en'
+        });
+        tickerEl.appendChild(tickerScript);
+
+        // Mount TradingView Advanced Chart
+        mountAdvancedChart();
+      }
+
+      function mountAdvancedChart() {
+        const chartEl = document.getElementById('tv-chart-slot');
+        if (!chartEl) return;
+        chartEl.innerHTML = '';
+        const slot = document.createElement('div');
+        slot.className = 'tradingview-widget-container__widget';
+        slot.style.height = '100%';
+        slot.style.width = '100%';
+        chartEl.appendChild(slot);
+        const script = document.createElement('script');
+        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+        script.async = true;
+        script.innerHTML = JSON.stringify({
+          autosize: true,
+          symbol: state.marketSymbol,
+          interval: state.marketInterval,
+          timezone: 'Etc/UTC',
+          theme: 'dark',
+          style: '1',
+          locale: 'en',
+          backgroundColor: 'rgba(11, 15, 23, 1)',
+          gridColor: 'rgba(148, 163, 184, 0.08)',
+          allow_symbol_change: true,
+          calendar: false,
+          save_image: false,
+          support_host: 'https://www.tradingview.com'
+        });
+        chartEl.appendChild(script);
+      }
+
+      window.setMarketSymbol = function (sym) { state.marketSymbol = sym; renderMarketTab(); };
+      window.setMarketInterval = function (iv) { state.marketInterval = iv; renderMarketTab(); };
+
+      // =====================================================
+      // 11. TAB 4 — ADMIN PUBLIC BROADCAST FEED
+      // =====================================================
+      function renderFeedTab() {
+        const container = document.getElementById('tab-feed');
+        const newPostBtn = state.isAdmin
+          ? '<button type="button" class="tr-btn tr-btn-primary tr-btn-sm tr-press" onclick="openPostModal()">+ New Post</button>'
+          : '';
+
+        let listHTML = '';
+        if (state.posts.length === 0) {
+          listHTML =
+            '<div class="tr-card" style="text-align:center;padding:44px 20px;">' +
+              '<div style="font-size:16px;font-weight:700;color:#F8FAFC;">No broadcasts yet</div>' +
+              '<p style="font-size:13px;color:var(--tr-muted);margin:6px auto 0;max-width:340px;">' +
+                (state.isAdmin
+                  ? 'Publish announcements, chart images, video breakdowns, or public signals using the New Post button.'
+                  : 'Desk announcements and public setups posted by the administrator will appear here in real time.') +
+              '</p></div>';
+        } else {
+          listHTML = '<div class="tr-stack" style="max-width:820px;">' + state.posts.map(function (post) {
+            const vid = getEmbedVideo(post.videoUrl);
+            const sig = post.signal;
+            const isBuy = sig && String(sig.type).indexOf('BUY') === 0;
+
+            const adminControls = state.isAdmin
+              ? (state.confirmDeletePostId === post.id
+                ? '<div style="display:flex;gap:6px;"><button type="button" class="tr-btn tr-btn-danger tr-btn-sm tr-press" onclick="deletePublicPost(\'' + esc(post.id) + '\')">Confirm</button><button type="button" class="tr-btn tr-btn-sm tr-press" onclick="cancelDeletePost()">Cancel</button></div>'
+                : '<button type="button" class="tr-btn tr-btn-sm tr-press" style="color:#FCA5A5;" onclick="askDeletePost(\'' + esc(post.id) + '\')">Delete</button>')
+              : '';
+
+            const sigHTML = sig
+              ? '<div style="padding:14px;border-radius:14px;background:rgba(11,15,23,0.8);border:1px solid ' + (isBuy ? 'var(--tr-buy-border)' : 'var(--tr-sell-border)') + ';display:flex;flex-direction:column;gap:12px;">' +
+                  '<div class="tr-flex-between">' +
+                    '<div style="display:flex;align-items:center;gap:8px;">' +
+                      '<span class="tr-mono" style="font-size:16px;font-weight:800;color:#F8FAFC;">' + esc(sig.pair) + '</span>' +
+                      '<span class="tr-badge" style="background:' + (isBuy ? 'var(--tr-buy-soft)' : 'var(--tr-sell-soft)') + ';color:' + (isBuy ? '#6EE7B7' : '#FCA5A5') + ';">' + esc(sig.type) + '</span>' +
+                    '</div>' +
+                    '<button type="button" class="tr-btn tr-btn-sm tr-press" style="min-height:34px;padding:5px 10px;" onclick="copyPublicSignal(\'' + esc(post.id) + '\')">' + (state.copiedPostId === post.id ? 'Copied' : 'Copy') + '</button>' +
+                  '</div>' +
+                  '<div class="tr-price-grid">' +
+                    '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">ENTRY</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;">' + sig.entryPrice + '</span></div>' +
+                    '<div class="tr-price-cell" style="border-color:rgba(239,68,68,0.28);"><span style="font-size:10px;font-weight:700;color:#FCA5A5;">SL</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#FCA5A5;">' + sig.stopLoss + '</span></div>' +
+                    '<div class="tr-price-cell" style="border-color:rgba(16,185,129,0.28);"><span style="font-size:10px;font-weight:700;color:#6EE7B7;">TP1</span><span class="tr-mono" style="font-size:13.5px;font-weight:700;color:#6EE7B7;">' + sig.tp1 + '</span></div>' +
+                    '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">TP2</span><span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (sig.tp2 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (sig.tp2 != null ? sig.tp2 : '&mdash;') + '</span></div>' +
+                    '<div class="tr-price-cell"><span style="font-size:10px;font-weight:700;color:var(--tr-muted);">TP3</span><span class="tr-mono" style="font-size:13.5px;font-weight:600;color:' + (sig.tp3 != null ? '#A7F3D0' : 'var(--tr-muted)') + ';">' + (sig.tp3 != null ? sig.tp3 : '&mdash;') + '</span></div>' +
+                  '</div>' +
+                '</div>'
+              : '';
+
+            const imgHTML = post.imageUrl
+              ? '<div style="border-radius:12px;overflow:hidden;border:1px solid var(--tr-border);background:#080B12;">' +
+                  '<img src="' + esc(post.imageUrl) + '" alt="' + esc(post.title || 'Chart') + '" referrerpolicy="no-referrer" onerror="this.parentElement.style.display=\'none\'" style="width:100%;max-height:420px;object-fit:cover;display:block;">' +
+                '</div>'
+              : '';
+
+            let vidHTML = '';
+            if (vid) {
+              if (vid.kind === 'iframe') {
+                vidHTML = '<div style="position:relative;width:100%;padding-top:56.25%;border-radius:12px;overflow:hidden;border:1px solid var(--tr-border);background:#000;">' +
+                  '<iframe src="' + esc(vid.src) + '" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:none;"></iframe></div>';
+              } else if (vid.kind === 'video') {
+                vidHTML = '<video src="' + esc(vid.src) + '" controls playsinline style="width:100%;max-height:400px;border-radius:12px;border:1px solid var(--tr-border);background:#000;"></video>';
+              } else {
+                vidHTML = '<a href="' + esc(vid.src) + '" target="_blank" rel="noopener noreferrer" class="tr-btn tr-btn-sm">Open Attached Video</a>';
+              }
+            }
+
+            const typeLabel = post.postType === 'signal' ? 'Public Signal' : post.postType === 'media' ? 'Media Analysis' : 'Announcement';
+
+            return '<article class="tr-card tr-stack">' +
+              '<div class="tr-flex-between">' +
+                '<div style="display:flex;align-items:center;gap:10px;">' +
+                  '<div style="width:36px;height:36px;border-radius:10px;background:var(--tr-buy-soft);border:1px solid var(--tr-buy-border);color:#6EE7B7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + ICONS.admin + '</div>' +
+                  '<div>' +
+                    '<div style="display:flex;align-items:center;gap:6px;">' +
+                      '<span style="font-size:13.5px;font-weight:700;color:#F8FAFC;">' + esc(post.authorName) + '</span>' +
+                      '<span class="tr-badge" style="background:var(--tr-buy-soft);color:#6EE7B7;">ADMIN</span>' +
+                    '</div>' +
+                    '<div style="font-size:11.5px;color:var(--tr-muted);">' + esc(formatShortTime(post.createdAt)) + ' &middot; ' + typeLabel + '</div>' +
+                  '</div>' +
+                '</div>' +
+                adminControls +
+              '</div>' +
+              '<div>' +
+                (post.title ? '<h2 style="margin:0 0 6px;font-size:17px;font-weight:800;color:#F8FAFC;">' + esc(post.title) + '</h2>' : '') +
+                (post.body ? '<p style="margin:0;font-size:14px;color:var(--tr-text-secondary);white-space:pre-wrap;line-height:1.6;">' + esc(post.body) + '</p>' : '') +
+              '</div>' +
+              sigHTML + imgHTML + vidHTML +
+            '</article>';
+          }).join('') + '</div>';
+        }
+
+        container.innerHTML =
+          '<div class="tr-flex-between">' +
+            '<div>' +
+              '<h1 style="margin:0;font-size:20px;font-weight:800;color:#F8FAFC;">Admin Broadcast Feed</h1>' +
+              '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">Official market updates, desk announcements &amp; public signals</div>' +
+            '</div>' +
+            newPostBtn +
+          '</div>' +
+          listHTML;
+      }
+
+      window.askDeletePost = function (id) { state.confirmDeletePostId = id; renderFeedTab(); };
+      window.cancelDeletePost = function () { state.confirmDeletePostId = null; renderFeedTab(); };
+      window.deletePublicPost = async function (id) {
+        if (!state.isAdmin || !db) return;
+        try {
+          await db.collection('public_posts').doc(id).delete();
+          state.confirmDeletePostId = null;
+        } catch (err) { console.error(err); }
+      };
+
+      window.copyPublicSignal = async function (postId) {
+        const post = state.posts.find(function (p) { return p.id === postId; });
+        if (!post || !post.signal) return;
+        const s = post.signal;
+        const lines = [s.pair + ' ' + s.type, 'Entry: ' + s.entryPrice, 'SL: ' + s.stopLoss, 'TP1: ' + s.tp1];
+        if (s.tp2 != null) lines.push('TP2: ' + s.tp2);
+        if (s.tp3 != null) lines.push('TP3: ' + s.tp3);
+        try {
+          await navigator.clipboard.writeText(lines.join('\n'));
+          state.copiedPostId = postId;
+          renderFeedTab();
+          setTimeout(function () { state.copiedPostId = null; renderFeedTab(); }, 1800);
+        } catch (e) {}
+      };
+
+      // Admin Post Modal Logic
+      window.setPostType = function (type) {
+        state.postModalType = type;
+        ['announcement', 'signal', 'media'].forEach(function (t) {
+          document.getElementById('pf-type-' + t).classList.toggle('active', t === type);
+        });
+        document.getElementById('pf-signal-fields').classList.toggle('hidden', type !== 'signal');
+      };
+
+      window.openPostModal = function () {
+        if (!state.isAdmin) return;
+        document.getElementById('post-form-err').classList.add('hidden');
+        document.getElementById('post-form').reset();
+        document.getElementById('pf-sig-pair').value = 'XAUUSD';
+        clearPostImage();
+        setPostType('announcement');
+        document.getElementById('post-modal').classList.remove('hidden');
+      };
+
+      window.closePostModal = function () {
+        document.getElementById('post-modal').classList.add('hidden');
+      };
+
+      window.clearPostImage = function () {
+        document.getElementById('pf-image-url').value = '';
+        document.getElementById('pf-image-preview').classList.add('hidden');
+      };
+
+      document.getElementById('pf-image-url').addEventListener('input', function (e) {
+        const v = e.target.value.trim();
+        const prev = document.getElementById('pf-image-preview');
+        if (v) {
+          document.getElementById('pf-image-preview-img').src = v;
+          prev.classList.remove('hidden');
+        } else {
+          prev.classList.add('hidden');
+        }
+      });
+
+      document.getElementById('pf-image-file').addEventListener('change', async function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const lbl = document.getElementById('pf-upload-label');
+        const errEl = document.getElementById('post-form-err');
+        errEl.classList.add('hidden');
+        lbl.textContent = '...';
+        try {
+          const dataUrl = await compressImageFile(file);
+          document.getElementById('pf-image-url').value = dataUrl;
+          document.getElementById('pf-image-preview-img').src = dataUrl;
+          document.getElementById('pf-image-preview').classList.remove('hidden');
+        } catch (err) {
+          errEl.textContent = err.message || 'Could not process image.';
+          errEl.classList.remove('hidden');
+        } finally {
+          lbl.textContent = 'Upload';
+          e.target.value = '';
+        }
+      });
+
+      document.getElementById('post-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!state.isAdmin || !state.profile || !db) return;
+        const errEl = document.getElementById('post-form-err');
+        errEl.classList.add('hidden');
+
+        const title = document.getElementById('pf-title').value.trim().slice(0, 180);
+        const body = document.getElementById('pf-body').value.trim().slice(0, 4000);
+        const imageUrl = document.getElementById('pf-image-url').value.trim();
+        const videoUrl = document.getElementById('pf-video-url').value.trim();
+
+        if (!title && !body && state.postModalType !== 'signal') {
+          errEl.textContent = 'Please enter a headline or commentary for your broadcast.';
+          errEl.classList.remove('hidden');
+          return;
+        }
+
+        let signal = null;
+        if (state.postModalType === 'signal') {
+          const pair = document.getElementById('pf-sig-pair').value.trim().toUpperCase();
+          const dir = document.getElementById('pf-sig-dir').value;
+          const entry = parseFloat(document.getElementById('pf-sig-entry').value);
+          const sl = parseFloat(document.getElementById('pf-sig-sl').value);
+          const tp1 = parseFloat(document.getElementById('pf-sig-tp1').value);
+          const tp2Raw = document.getElementById('pf-sig-tp2').value.trim();
+          const tp3Raw = document.getElementById('pf-sig-tp3').value.trim();
+          if (!pair || isNaN(entry) || isNaN(sl) || isNaN(tp1)) {
+            errEl.textContent = 'Public Signal requires Pair, Entry, Stop Loss, and TP1.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+          signal = {
+            pair: pair,
+            type: dir,
+            entryPrice: entry,
+            stopLoss: sl,
+            tp1: tp1,
+            tp2: tp2Raw ? parseFloat(tp2Raw) : null,
+            tp3: tp3Raw ? parseFloat(tp3Raw) : null
+          };
+        }
+
+        const btn = document.getElementById('pf-save-btn');
+        btn.disabled = true;
+        btn.textContent = 'Publishing...';
+
+        try {
+          await db.collection('public_posts').add({
+            authorUid: state.profile.uid,
+            authorEmail: state.profile.email,
+            authorName: state.profile.displayName || 'Desk Admin',
+            postType: state.postModalType,
+            title: title || (signal ? (signal.pair + ' ' + signal.type + ' Signal') : 'Desk Update'),
+            body: body,
+            imageUrl: imageUrl,
+            videoUrl: videoUrl,
+            signal: signal,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          closePostModal();
+        } catch (err) {
+          errEl.textContent = err && err.message ? err.message : 'Failed to publish post.';
+          errEl.classList.remove('hidden');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Publish Broadcast';
+        }
+      });
+
+      // =====================================================
+      // 12. TAB 5 — PROFILE & ADMIN USER MANAGEMENT PANEL
+      // =====================================================
+      function renderProfileTab() {
+        if (!state.profile) return;
+        const p = state.profile;
+        const container = document.getElementById('tab-profile');
+
+        let adminSection = '';
+        if (state.isAdmin) {
+          const total = state.allUsers.length;
+          const blocked = state.allUsers.filter(function (u) { return u.isBlocked; }).length;
+          const active = total - blocked;
+          const q = state.userSearch.trim().toLowerCase();
+          const filteredUsers = state.allUsers.filter(function (u) {
+            if (state.userFilter === 'active' && u.isBlocked) return false;
+            if (state.userFilter === 'blocked' && !u.isBlocked) return false;
+            if (!q) return true;
+            return u.email.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q);
+          });
+
+          const userRows = filteredUsers.length === 0
+            ? '<div style="text-align:center;padding:24px;font-size:13px;color:var(--tr-muted);">No registered users match your filter.</div>'
+            : filteredUsers.map(function (u) {
+                const selfAdmin = isAdminEmail(u.email);
+                const badge = selfAdmin
+                  ? '<span class="tr-badge" style="background:var(--tr-buy-soft);color:#6EE7B7;">ADMIN</span>'
+                  : u.isBlocked
+                  ? '<span class="tr-badge" style="background:var(--tr-sell-soft);color:#FCA5A5;">BLOCKED</span>'
+                  : '<span class="tr-badge" style="background:rgba(148,163,184,0.14);color:#CBD5E1;">ACTIVE</span>';
+
+                const toggleBtn = selfAdmin ? '' :
+                  '<button type="button" class="tr-btn tr-btn-sm tr-press ' + (u.isBlocked ? 'tr-btn-buy' : 'tr-btn-danger') + '" onclick="toggleUserBlock(\'' + esc(u.uid) + '\',' + (!u.isBlocked) + ')">' +
+                    (u.isBlocked ? 'Unblock User' : 'Block User') +
+                  '</button>';
+
+                return '<div class="tr-flex-between" style="padding:12px 14px;border-radius:12px;background:rgba(11,15,23,0.72);border:1px solid ' + (u.isBlocked ? 'var(--tr-sell-border)' : 'var(--tr-border)') + ';">' +
+                  '<div style="min-width:0;flex:1 1 200px;">' +
+                    '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">' +
+                      '<span style="font-size:14px;font-weight:700;color:#F8FAFC;">' + esc(u.displayName) + '</span>' + badge +
+                    '</div>' +
+                    '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;word-break:break-all;">' + esc(u.email) + ' &middot; Joined ' + esc(formatShortTime(u.createdAt)) + '</div>' +
+                  '</div>' +
+                  toggleBtn +
+                '</div>';
+              }).join('');
+
+          adminSection =
+            '<div class="tr-card tr-stack">' +
+              '<div class="tr-flex-between">' +
+                '<div>' +
+                  '<h2 style="margin:0;font-size:17px;font-weight:800;color:#F8FAFC;">Registered Users Management</h2>' +
+                  '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">Block or unblock accounts instantly &middot; Enforced server-side via Firestore Rules</div>' +
+                '</div>' +
+                '<div class="tr-mono" style="display:flex;gap:12px;font-size:12.5px;">' +
+                  '<span>Total: <strong>' + total + '</strong></span>' +
+                  '<span style="color:#6EE7B7;">Active: <strong>' + active + '</strong></span>' +
+                  '<span style="color:#FCA5A5;">Blocked: <strong>' + blocked + '</strong></span>' +
+                '</div>' +
+              '</div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">' +
+                '<div class="tr-segmented">' +
+                  '<button type="button" class="tr-seg-btn tr-press ' + (state.userFilter === 'all' ? 'active' : '') + '" onclick="setUserFilter(\'all\')">All Users</button>' +
+                  '<button type="button" class="tr-seg-btn tr-press ' + (state.userFilter === 'active' ? 'active' : '') + '" onclick="setUserFilter(\'active\')">Active</button>' +
+                  '<button type="button" class="tr-seg-btn tr-press ' + (state.userFilter === 'blocked' ? 'active' : '') + '" onclick="setUserFilter(\'blocked\')">Blocked</button>' +
+                '</div>' +
+                '<input id="admin-user-search" type="search" class="tr-input" style="flex:1 1 220px;min-height:40px;" placeholder="Search by email or name..." value="' + esc(state.userSearch) + '">' +
+              '</div>' +
+              '<div style="display:flex;flex-direction:column;gap:10px;">' + userRows + '</div>' +
+            '</div>';
+        }
+
+        container.innerHTML =
+          '<div>' +
+            '<h1 style="margin:0;font-size:20px;font-weight:800;color:#F8FAFC;">' + (state.isAdmin ? 'Profile &amp; Admin Control' : 'Trader Profile') + '</h1>' +
+            '<div style="font-size:12.5px;color:var(--tr-muted);margin-top:2px;">Manage your desk preferences, security, and session</div>' +
+          '</div>' +
+
+          '<div class="tr-card" style="max-width:720px;">' +
+            '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">' +
+              '<div style="width:44px;height:44px;border-radius:12px;background:var(--tr-buy-soft);border:1px solid var(--tr-buy-border);color:#6EE7B7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + (state.isAdmin ? ICONS.admin : ICONS.profile) + '</div>' +
+              '<div style="min-width:0;">' +
+                '<div style="font-size:15px;font-weight:700;color:#F8FAFC;word-break:break-all;">' + esc(p.email) + '</div>' +
+                '<div style="font-size:12px;color:var(--tr-muted);">Role: <strong style="color:' + (state.isAdmin ? '#6EE7B7' : '#CBD5E1') + ';">' + (state.isAdmin ? 'Administrator' : 'Private Trader') + '</strong> &middot; Joined ' + esc(formatShortTime(p.createdAt)) + '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<form id="profile-settings-form" class="tr-stack">' +
+              '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;">' +
+                '<div>' +
+                  '<label class="tr-label" for="prof-name">Display Name</label>' +
+                  '<input id="prof-name" type="text" class="tr-input" maxlength="80" value="' + esc(p.displayName) + '">' +
+                '</div>' +
+                '<div>' +
+                  '<label class="tr-label" for="prof-equity">Base Account Equity (USD)</label>' +
+                  '<input id="prof-equity" type="number" min="100" step="100" class="tr-input tr-mono" value="' + state.baseEquity + '">' +
+                '</div>' +
+              '</div>' +
+              '<div id="prof-notice" class="hidden" style="font-size:12.5px;color:#6EE7B7;font-weight:600;"></div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:10px;padding-top:4px;">' +
+                '<button type="submit" id="prof-save-btn" class="tr-btn tr-btn-primary tr-btn-sm tr-press">Save Settings</button>' +
+                '<button type="button" id="prof-reset-btn" class="tr-btn tr-btn-sm tr-press" onclick="sendProfilePasswordReset()">Reset Password</button>' +
+                '<button type="button" class="tr-btn tr-btn-danger tr-btn-sm tr-press" style="margin-left:auto;" onclick="handleSignOut()">Sign Out</button>' +
+              '</div>' +
+            '</form>' +
+          '</div>' +
+          adminSection;
+
+        const formEl = document.getElementById('profile-settings-form');
+        if (formEl) {
+          formEl.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const nameVal = document.getElementById('prof-name').value.trim().slice(0, 80);
+            const eqVal = parseFloat(document.getElementById('prof-equity').value);
+            const notice = document.getElementById('prof-notice');
+            const saveBtn = document.getElementById('prof-save-btn');
+            saveBtn.disabled = true;
+            try {
+              if (nameVal && nameVal !== p.displayName && db) {
+                await db.collection('users').doc(p.uid).update({
+                  displayName: nameVal,
+                  updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                if (auth && auth.currentUser) await auth.currentUser.updateProfile({ displayName: nameVal });
+              }
+              if (!isNaN(eqVal) && eqVal >= 100) {
+                saveBaseEquity(eqVal);
+                renderAnalysisTab();
+                updateTopbarGrowth();
+              }
+              notice.textContent = 'Account settings updated.';
+              notice.classList.remove('hidden');
+              setTimeout(function () { notice.classList.add('hidden'); }, 2600);
+            } catch (err) {
+              notice.textContent = err && err.message ? err.message : 'Unable to save settings.';
+              notice.classList.remove('hidden');
+            } finally {
+              saveBtn.disabled = false;
+            }
+          });
+        }
+
+        const userSearchEl = document.getElementById('admin-user-search');
+        if (userSearchEl) {
+          userSearchEl.addEventListener('input', function (ev) {
+            state.userSearch = ev.target.value;
+            renderProfileTab();
+            const restored = document.getElementById('admin-user-search');
+            if (restored) { restored.focus(); restored.setSelectionRange(restored.value.length, restored.value.length); }
+          });
+        }
+      }
+
+      window.sendProfilePasswordReset = async function () {
+        if (!state.profile || !auth) return;
+        const btn = document.getElementById('prof-reset-btn');
+        try {
+          await auth.sendPasswordResetEmail(state.profile.email);
+          if (btn) { btn.textContent = 'Reset Email Sent'; setTimeout(function () { btn.textContent = 'Reset Password'; }, 4000); }
+        } catch (err) { console.error(err); }
+      };
+
+      window.setUserFilter = function (f) { state.userFilter = f; renderProfileTab(); };
+
+      window.toggleUserBlock = async function (targetUid, nextBlocked) {
+        if (!state.isAdmin || !db) return;
+        try {
+          await db.collection('users').doc(targetUid).update({
+            isBlocked: Boolean(nextBlocked),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } catch (err) { console.error('Block toggle error:', err); }
+      };
+    })();
+  </script>
+</body>
+</html>
