@@ -9,6 +9,11 @@
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["admin", "user"] },
         "isBlocked": { "type": "boolean" },
+        "balance": { "type": "number" },
+        "accountType": { "type": "string", "enum": ["standard", "cent"] },
+        "language": { "type": "string", "enum": ["en", "ar", "ku"] },
+        "theme": { "type": "string", "enum": ["dark", "light"] },
+        "dailyMaxLossPct": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -43,6 +48,25 @@
       },
       "required": ["uid", "pair", "type", "entryPrice", "stopLoss", "tp1", "lotSize", "status"]
     },
+    "PriceAlert": {
+      "title": "PriceAlert",
+      "description": "Private per-user custom price alert / alarm stored at users/{uid}/alerts/{alertId}.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "pair": { "type": "string" },
+        "targetPrice": { "type": "number" },
+        "condition": { "type": "string", "enum": ["above", "below"] },
+        "active": { "type": "boolean" },
+        "triggered": { "type": "boolean" },
+        "triggeredPrice": { "type": "number" },
+        "triggeredAt": { "type": "string", "format": "date-time" },
+        "note": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "pair", "targetPrice", "condition", "active"]
+    },
     "PublicFeedPost": {
       "title": "PublicFeedPost",
       "description": "Admin-authored broadcast post (announcement, image, video, or public signal).",
@@ -70,6 +94,10 @@
     "/users/{userId}/trades/{tradeId}": {
       "schema": { "$ref": "#/entities/TradeSignal" },
       "description": "Strictly private per-user trading signals and journal entries."
+    },
+    "/users/{userId}/alerts/{alertId}": {
+      "schema": { "$ref": "#/entities/PriceAlert" },
+      "description": "Strictly private per-user custom price alerts / alarms."
     },
     "/public_posts/{postId}": {
       "schema": { "$ref": "#/entities/PublicFeedPost" },

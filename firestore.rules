@@ -35,13 +35,22 @@ service cloud.firestore {
       let data = request.resource.data;
       return isOwner(userId) &&
         data.keys().hasAll(['email', 'displayName', 'role', 'isBlocked']) &&
-        data.keys().hasOnly(['email', 'displayName', 'role', 'isBlocked', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'email', 'displayName', 'role', 'isBlocked',
+          'balance', 'accountType', 'language', 'theme', 'dailyMaxLossPct',
+          'createdAt', 'updatedAt'
+        ]) &&
         data.email is string &&
         data.email.lower() == request.auth.token.email.lower() &&
         data.displayName is string &&
         data.displayName.size() > 0 &&
         data.displayName.size() <= 80 &&
         data.isBlocked == false &&
+        (!('balance' in data) || (data.balance is number && data.balance >= 0)) &&
+        (!('accountType' in data) || data.accountType in ['standard', 'cent']) &&
+        (!('language' in data) || data.language in ['en', 'ar', 'ku']) &&
+        (!('theme' in data) || data.theme in ['dark', 'light']) &&
+        (!('dailyMaxLossPct' in data) || (data.dailyMaxLossPct is number && data.dailyMaxLossPct > 0 && data.dailyMaxLossPct <= 100)) &&
         (
           (isTradingAdmin() && data.role == 'admin') ||
           (!isTradingAdmin() && data.role == 'user')
@@ -50,10 +59,14 @@ service cloud.firestore {
 
     function isValidOwnerProfileUpdate() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
-      return changed.hasOnly(['displayName', 'updatedAt']) &&
-        request.resource.data.displayName is string &&
-        request.resource.data.displayName.size() > 0 &&
-        request.resource.data.displayName.size() <= 80;
+      let data = request.resource.data;
+      return changed.hasOnly(['displayName', 'balance', 'accountType', 'language', 'theme', 'dailyMaxLossPct', 'updatedAt']) &&
+        (!('displayName' in changed) || (data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 80)) &&
+        (!('balance' in changed) || (data.balance is number && data.balance >= 0 && data.balance <= 1000000000)) &&
+        (!('accountType' in changed) || data.accountType in ['standard', 'cent']) &&
+        (!('language' in changed) || data.language in ['en', 'ar', 'ku']) &&
+        (!('theme' in changed) || data.theme in ['dark', 'light']) &&
+        (!('dailyMaxLossPct' in changed) || (data.dailyMaxLossPct is number && data.dailyMaxLossPct > 0 && data.dailyMaxLossPct <= 100));
     }
 
     function isValidTradeSignal(userId) {
@@ -71,7 +84,7 @@ service cloud.firestore {
         data.entryPrice is number &&
         data.stopLoss is number &&
         data.tp1 is number &&
-        data.lotSize is number && data.lotSize > 0 && data.lotSize <= 1000 &&
+        data.lotSize is number && data.lotSize > 0 && data.lotSize <= 100000 &&
         data.status in ['Pending', 'Active', 'Won', 'Lost'] &&
         (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
     }
@@ -87,6 +100,24 @@ service cloud.firestore {
         data.postType in ['announcement', 'signal', 'media'] &&
         data.title is string && data.title.size() <= 180 &&
         data.body is string && data.body.size() <= 4000;
+    }
+
+    function isValidPriceAlert(userId) {
+      let data = request.resource.data;
+      return data.keys().hasAll(['uid', 'pair', 'targetPrice', 'condition', 'active']) &&
+        data.keys().hasOnly([
+          'uid', 'pair', 'targetPrice', 'condition', 'active',
+          'note', 'triggered', 'triggeredPrice', 'triggeredAt',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.uid == userId &&
+        data.pair is string && data.pair.size() >= 2 && data.pair.size() <= 20 &&
+        data.targetPrice is number && data.targetPrice > 0 &&
+        data.condition in ['above', 'below'] &&
+        data.active is bool &&
+        (!('triggered' in data) || data.triggered is bool) &&
+        (!('triggeredPrice' in data) || (data.triggeredPrice is number && data.triggeredPrice > 0)) &&
+        (!('note' in data) || (data.note is string && data.note.size() <= 200));
     }
 
     // ===============================================================
@@ -107,6 +138,14 @@ service cloud.firestore {
         allow read: if isOwner(userId) && isNotBlocked();
         allow create: if isOwner(userId) && isNotBlocked() && isValidTradeSignal(userId);
         allow update: if isOwner(userId) && isNotBlocked() && isValidTradeSignal(userId);
+        allow delete: if isOwner(userId) && isNotBlocked();
+      }
+
+      // Strictly Private Per-User Custom Price Alerts (Alarms)
+      match /alerts/{alertId} {
+        allow read: if isOwner(userId) && isNotBlocked();
+        allow create: if isOwner(userId) && isNotBlocked() && isValidPriceAlert(userId);
+        allow update: if isOwner(userId) && isNotBlocked() && isValidPriceAlert(userId);
         allow delete: if isOwner(userId) && isNotBlocked();
       }
     }
