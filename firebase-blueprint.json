@@ -84,6 +84,81 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["authorUid", "authorEmail", "postType", "title"]
+    },
+    "Channel": {
+      "title": "Channel",
+      "description": "Telegram-style public trading channel created by any logged-in user.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "subscribers": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "ownerName", "name", "subscribers"]
+    },
+    "ChannelPost": {
+      "title": "ChannelPost",
+      "description": "Broadcast post inside a channel supporting signals, text, images, videos, unique views, reactions, and optional comments.",
+      "type": "object",
+      "properties": {
+        "channelId": { "type": "string" },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "postType": { "type": "string", "enum": ["text", "signal", "media"] },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "signal": { "type": "object" },
+        "commentsEnabled": { "type": "boolean" },
+        "viewedBy": { "type": "array", "items": { "type": "string" } },
+        "reactions": { "type": "object" },
+        "commentCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["channelId", "authorUid", "authorName", "postType", "commentsEnabled"]
+    },
+    "ChannelComment": {
+      "title": "ChannelComment",
+      "description": "User comment on a channel post when commentsEnabled is true.",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string" },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["postId", "authorUid", "authorName", "text"]
+    },
+    "AppConfig": {
+      "title": "AppConfig",
+      "description": "Admin-managed global app configuration (maintenance switch and live global popup dialog).",
+      "type": "object",
+      "properties": {
+        "maintenanceEnabled": { "type": "boolean" },
+        "maintenanceMessage": { "type": "string" },
+        "popup": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "GlobalNotification": {
+      "title": "GlobalNotification",
+      "description": "Admin-broadcast notification pushed to all users' Notification Center.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "body", "authorUid"]
     }
   },
   "firestore": {
@@ -102,6 +177,26 @@
     "/public_posts/{postId}": {
       "schema": { "$ref": "#/entities/PublicFeedPost" },
       "description": "Public feed posts readable by active logged-in users and writable only by Admin (tafteshok@gmail.com)."
+    },
+    "/channels/{channelId}": {
+      "schema": { "$ref": "#/entities/Channel" },
+      "description": "Telegram-style public channels created by logged-in traders."
+    },
+    "/channel_posts/{postId}": {
+      "schema": { "$ref": "#/entities/ChannelPost" },
+      "description": "Channel posts with unique views, emoji reactions, and toggleable comments."
+    },
+    "/channel_posts/{postId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/ChannelComment" },
+      "description": "Comments under a channel post."
+    },
+    "/app_config/{docId}": {
+      "schema": { "$ref": "#/entities/AppConfig" },
+      "description": "Admin maintenance switch and global popup dialog configuration."
+    },
+    "/global_notifications/{notifId}": {
+      "schema": { "$ref": "#/entities/GlobalNotification" },
+      "description": "Global admin notification broadcasts."
     }
   }
 }

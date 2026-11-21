@@ -120,8 +120,75 @@ service cloud.firestore {
         (!('note' in data) || (data.note is string && data.note.size() <= 200));
     }
 
+    function isValidChannelCreate() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['ownerUid', 'ownerName', 'name', 'subscribers']) &&
+        data.keys().hasOnly([
+          'ownerUid', 'ownerName', 'name', 'description', 'avatarUrl',
+          'subscribers', 'postCount', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerUid == request.auth.uid &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 80 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 400)) &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500000)) &&
+        data.subscribers is list;
+    }
+
+    function isValidChannelJoinLeave() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['subscribers', 'updatedAt']) &&
+        request.resource.data.subscribers is list;
+    }
+
+    function isValidChannelPostCreate() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['channelId', 'authorUid', 'authorName', 'postType', 'commentsEnabled']) &&
+        data.keys().hasOnly([
+          'channelId', 'authorUid', 'authorName', 'postType', 'title', 'body',
+          'imageUrl', 'videoUrl', 'signal', 'commentsEnabled',
+          'viewedBy', 'reactions', 'commentCount', 'createdAt', 'updatedAt'
+        ]) &&
+        data.authorUid == request.auth.uid &&
+        data.channelId is string &&
+        exists(/databases/$(database)/documents/channels/$(data.channelId)) &&
+        get(/databases/$(database)/documents/channels/$(data.channelId)).data.ownerUid == request.auth.uid &&
+        data.postType in ['text', 'signal', 'media'] &&
+        data.commentsEnabled is bool &&
+        (!('title' in data) || (data.title is string && data.title.size() <= 180)) &&
+        (!('body' in data) || (data.body is string && data.body.size() <= 4000));
+    }
+
+    function isValidChannelPostEngagement() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['viewedBy', 'reactions', 'commentCount', 'updatedAt']) &&
+        (!('viewedBy' in changed) || request.resource.data.viewedBy is list) &&
+        (!('reactions' in changed) || request.resource.data.reactions is map) &&
+        (!('commentCount' in changed) || request.resource.data.commentCount is number);
+    }
+
+    function isValidChannelCommentCreate(postId) {
+      let data = request.resource.data;
+      return data.keys().hasAll(['postId', 'authorUid', 'authorName', 'text']) &&
+        data.keys().hasOnly(['postId', 'authorUid', 'authorName', 'text', 'createdAt']) &&
+        data.postId == postId &&
+        data.authorUid == request.auth.uid &&
+        data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 80 &&
+        data.text is string && data.text.size() > 0 && data.text.size() <= 1000 &&
+        exists(/databases/$(database)/documents/channel_posts/$(postId)) &&
+        get(/databases/$(database)/documents/channel_posts/$(postId)).data.commentsEnabled != false;
+    }
+
+    function isValidGlobalNotification() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['title', 'body', 'authorUid']) &&
+        data.keys().hasOnly(['title', 'body', 'imageUrl', 'authorUid', 'authorName', 'createdAt']) &&
+        data.authorUid == request.auth.uid &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 180 &&
+        data.body is string && data.body.size() <= 2000;
+    }
+
     // ===============================================================
-    // Isolated /trading Collections
+    // Isolated /trading Collections (Noti Trade)
     // ===============================================================
 
     // User Profiles: owner can read own profile; Admin can list all & toggle isBlocked
@@ -155,6 +222,61 @@ service cloud.firestore {
       allow read: if isSignedIn() && isNotBlocked();
       allow create: if isTradingAdmin() && isValidPublicPost();
       allow update: if isTradingAdmin() && isValidPublicPost();
+      allow delete: if isTradingAdmin();
+    }
+
+    // Telegram-Style Public Channels: Any active user can create/browse/join; Owner manages channel
+    match /channels/{channelId} {
+      allow read: if isSignedIn() && isNotBlocked();
+      allow create: if isSignedIn() && isNotBlocked() && isValidChannelCreate();
+      allow update: if isSignedIn() && isNotBlocked() && (
+        resource.data.ownerUid == request.auth.uid ||
+        isTradingAdmin() ||
+        isValidChannelJoinLeave()
+      );
+      allow delete: if isSignedIn() && isNotBlocked() && (
+        resource.data.ownerUid == request.auth.uid ||
+        isTradingAdmin()
+      );
+    }
+
+    // Channel Posts (Signals, Text, Images, Videos) + Unique Views, Reactions & Comments
+    match /channel_posts/{postId} {
+      allow read: if isSignedIn() && isNotBlocked();
+      allow create: if isSignedIn() && isNotBlocked() && isValidChannelPostCreate();
+      allow update: if isSignedIn() && isNotBlocked() && (
+        resource.data.authorUid == request.auth.uid ||
+        isTradingAdmin() ||
+        isValidChannelPostEngagement()
+      );
+      allow delete: if isSignedIn() && isNotBlocked() && (
+        resource.data.authorUid == request.auth.uid ||
+        isTradingAdmin()
+      );
+
+      // Post Comments (Enforced server-side: only allowed when post.commentsEnabled != false)
+      match /comments/{commentId} {
+        allow read: if isSignedIn() && isNotBlocked();
+        allow create: if isSignedIn() && isNotBlocked() && isValidChannelCommentCreate(postId);
+        allow delete: if isSignedIn() && isNotBlocked() && (
+          resource.data.authorUid == request.auth.uid ||
+          isTradingAdmin() ||
+          get(/databases/$(database)/documents/channel_posts/$(postId)).data.authorUid == request.auth.uid
+        );
+      }
+    }
+
+    // App Configuration (Maintenance Mode Switch & Global Popup Dialog) — Admin Write Only
+    match /app_config/{docId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isTradingAdmin();
+    }
+
+    // Global Admin Notification Broadcasts — Admin Write Only, Active Users Read
+    match /global_notifications/{notifId} {
+      allow read: if isSignedIn() && isNotBlocked();
+      allow create: if isTradingAdmin() && isValidGlobalNotification();
+      allow update: if isTradingAdmin() && isValidGlobalNotification();
       allow delete: if isTradingAdmin();
     }
 
